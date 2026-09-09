@@ -17,6 +17,10 @@ try {
     switch ($action) {
         // 0. System Status (check available PDO drivers on Vercel)
         case 'system_status':
+            $taskCount = (int)$pdo->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
+            $memberCount = (int)$pdo->query("SELECT COUNT(*) FROM members")->fetchColumn();
+            $teamCount = (int)$pdo->query("SELECT COUNT(*) FROM teams")->fetchColumn();
+            $lmsCount = (int)$pdo->query("SELECT COUNT(*) FROM lms_modules")->fetchColumn();
             echo json_encode([
                 'success' => true,
                 'drivers' => PDO::getAvailableDrivers(),
@@ -25,6 +29,12 @@ try {
                 'db_driver' => $dbDriver,
                 'db_source' => $dbSource,
                 'has_postgres_url' => !empty(getDbEnv('POSTGRES_URL') ?: getDbEnv('DATABASE_URL') ?: getDbEnv('POSTGRES_PRISMA_URL') ?: getDbEnv('POSTGRES_URL_NON_POOLING')),
+                'counts' => [
+                    'tasks' => $taskCount,
+                    'members' => $memberCount,
+                    'teams' => $teamCount,
+                    'lms_modules' => $lmsCount
+                ]
             ]);
             exit;
 
