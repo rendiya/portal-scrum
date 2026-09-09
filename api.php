@@ -146,15 +146,17 @@ try {
             $teamId = $input['team_id'] ?? ($_SESSION['scrumvibe_team_id'] ?? '');
             $tasksList = $input['tasks'] ?? [];
             if (!empty($tasksList) && is_array($tasksList)) {
-                $stmt = $pdo->prepare("
-                    INSERT OR REPLACE INTO tasks (id, team_id, prd_id, title, description, status, role_category, story_points, priority, assignee_id, assignee_name, sprint_number, dependency_task_id, dependency_task_title, created_at, updated_at)
+                $delTask = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
+                $insTask = $pdo->prepare("
+                    INSERT INTO tasks (id, team_id, prd_id, title, description, status, role_category, story_points, priority, assignee_id, assignee_name, sprint_number, dependency_task_id, dependency_task_title, created_at, updated_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $now = date('Y-m-d H:i:s');
                 $count = 0;
                 foreach ($tasksList as $t) {
                     if (empty($t['id']) || empty($t['title'])) continue;
-                    $stmt->execute([
+                    $delTask->execute([$t['id']]);
+                    $insTask->execute([
                         $t['id'],
                         !empty($t['team_id']) ? $t['team_id'] : ($teamId ?: 'team-1'),
                         $t['prd_id'] ?? null,
@@ -539,9 +541,11 @@ try {
                 'invitationTemplate' => $input['invitationTemplate'] ?? '',
                 'weeklyReportTemplate' => $input['weeklyReportTemplate'] ?? ''
             ];
-            $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)");
+            $delStmt = $pdo->prepare('DELETE FROM system_settings WHERE "key" = ?');
+            $insStmt = $pdo->prepare('INSERT INTO system_settings ("key", "value") VALUES (?, ?)');
             foreach ($settings as $k => $v) {
-                $stmt->execute([$k, $v]);
+                $delStmt->execute([$k]);
+                $insStmt->execute([$k, $v]);
             }
             echo json_encode(['success' => true, 'message' => 'Pengaturan berhasil disimpan']);
             break;

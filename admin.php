@@ -62,9 +62,15 @@ $appBaseUrl = $scheme . "://" . $host;
             </div>
         </div>
 
-        <span class="px-3 py-1 bg-purple-100 text-purple-950 border border-purple-300 rounded-lg text-xs font-black">
-            Hak Akses Super Admin
-        </span>
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="px-3 py-1 bg-purple-100 text-purple-950 border border-purple-300 rounded-lg text-xs font-black">
+                Hak Akses Super Admin
+            </span>
+            <span class="px-3 py-1 <?= ($dbDriver === 'pgsql' ? 'bg-emerald-50 text-emerald-900 border-emerald-300' : 'bg-amber-50 text-amber-900 border-amber-300') ?> border rounded-lg text-xs font-bold flex items-center gap-1.5" title="<?= htmlspecialchars($dbSource ?? '') ?>">
+                <span class="w-2 h-2 rounded-full <?= ($dbDriver === 'pgsql' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500') ?>"></span>
+                DB: <?= ($dbDriver === 'pgsql' ? 'Supabase PostgreSQL' : 'SQLite Serverless') ?>
+            </span>
+        </div>
     </div>
 
     <!-- Forms: 1. Create Team, 2. Add Student -->

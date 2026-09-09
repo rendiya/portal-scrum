@@ -18,7 +18,7 @@ function generateWaMeLink($phone, $message) {
 }
 
 function getSystemSetting($pdo, $key, $default = '') {
-    $stmt = $pdo->prepare("SELECT value FROM system_settings WHERE key = ?");
+    $stmt = $pdo->prepare('SELECT "value" FROM system_settings WHERE "key" = ?');
     $stmt->execute([$key]);
     $row = $stmt->fetch();
     return $row ? $row['value'] : $default;

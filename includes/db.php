@@ -1,105 +1,199 @@
 <?php
-// includes/db.php - Database connection & schema migration using PDO SQLite
+// includes/db.php - Universal Database connection (Supabase PostgreSQL / SQLite fallback)
 
-$dbPath = __DIR__ . '/../scrumvibe.db';
-
-// Support Vercel serverless environment (root directory is read-only)
-if (getenv('VERCEL') || getenv('NOW_REGION')) {
-    $tmpDir = sys_get_temp_dir();
-    $tmpDb = $tmpDir . '/scrumvibe.db';
-    if (!file_exists($tmpDb) && file_exists($dbPath)) {
-        @copy($dbPath, $tmpDb);
-    }
-    $dbPath = $tmpDb;
+// Helper to get environment variable across Vercel, Docker, and local environments
+function getDbEnv($key) {
+    return getenv($key) ?: ($_ENV[$key] ?? ($_SERVER[$key] ?? ''));
 }
 
-$isNew = !file_exists($dbPath);
+// Function to parse PostgreSQL / Supabase connection strings
+function parsePostgresUrl($url) {
+    if (!preg_match('#^postgres(?:ql)?://#i', $url)) {
+        return false;
+    }
+    $parts = parse_url($url);
+    if ($parts && !empty($parts['host'])) {
+        $host = $parts['host'];
+        $port = !empty($parts['port']) ? (int)$parts['port'] : 5432;
+        $user = !empty($parts['user']) ? urldecode($parts['user']) : 'postgres';
+        $pass = !empty($parts['pass']) ? urldecode($parts['pass']) : '';
+        $path = !empty($parts['path']) ? ltrim($parts['path'], '/') : 'postgres';
+        if (($pos = strpos($path, '?')) !== false) {
+            $path = substr($path, 0, $pos);
+        }
+        $sslmode = ($host === 'localhost' || $host === '127.0.0.1') ? 'prefer' : 'require';
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $q);
+            if (!empty($q['sslmode'])) {
+                $sslmode = $q['sslmode'];
+            }
+        }
+        return [
+            'host' => $host,
+            'port' => $port,
+            'user' => $user,
+            'pass' => $pass,
+            'dbname' => $path ?: 'postgres',
+            'sslmode' => $sslmode
+        ];
+    }
+    return false;
+}
 
+$pdo = null;
+$dbDriver = 'sqlite';
+$dbSource = 'Local SQLite';
+
+// 1. Detect Supabase / PostgreSQL connection configuration
+$rawDbUrl = getDbEnv('DATABASE_URL')
+    ?: getDbEnv('POSTGRES_URL')
+    ?: getDbEnv('SUPABASE_DB_URL')
+    ?: getDbEnv('POSTGRES_PRISMA_URL')
+    ?: getDbEnv('POSTGRES_URL_NON_POOLING');
+
+$hasPgsqlDriver = extension_loaded('pdo_pgsql') || in_array('pgsql', PDO::getAvailableDrivers());
+
+$pgInfo = null;
+if (!empty($rawDbUrl)) {
+    $pgInfo = parsePostgresUrl($rawDbUrl);
+} elseif (!empty(getDbEnv('PGHOST')) || !empty(getDbEnv('DB_HOST')) || !empty(getDbEnv('SUPABASE_HOST'))) {
+    $pgHost = getDbEnv('PGHOST') ?: getDbEnv('DB_HOST') ?: getDbEnv('SUPABASE_HOST');
+    $pgPort = (int)(getDbEnv('PGPORT') ?: getDbEnv('DB_PORT') ?: 5432);
+    $pgInfo = [
+        'host' => $pgHost,
+        'port' => $pgPort,
+        'user' => getDbEnv('PGUSER') ?: getDbEnv('DB_USER') ?: 'postgres',
+        'pass' => getDbEnv('PGPASSWORD') ?: getDbEnv('DB_PASSWORD') ?: '',
+        'dbname' => getDbEnv('PGDATABASE') ?: getDbEnv('DB_NAME') ?: 'postgres',
+        'sslmode' => ($pgHost === 'localhost' || $pgHost === '127.0.0.1') ? 'prefer' : 'require'
+    ];
+}
+
+// 2. Attempt PostgreSQL connection if configured and driver is available
+if ($pgInfo && $hasPgsqlDriver) {
+    try {
+        $dsn = "pgsql:host={$pgInfo['host']};port={$pgInfo['port']};dbname={$pgInfo['dbname']};sslmode={$pgInfo['sslmode']}";
+        $pdo = new PDO($dsn, $pgInfo['user'], $pgInfo['pass'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT => 5
+        ]);
+        $dbDriver = 'pgsql';
+        $dbSource = "Supabase PostgreSQL ({$pgInfo['host']})";
+    } catch (Throwable $e) {
+        error_log("Supabase PostgreSQL connection failed: " . $e->getMessage() . " - falling back to SQLite.");
+        $pdo = null;
+    }
+}
+
+// 3. Fallback to SQLite if PostgreSQL not configured or failed
+if (!$pdo) {
+    $dbPath = __DIR__ . '/../scrumvibe.db';
+
+    // Support Vercel serverless environment (root directory is read-only)
+    if (getenv('VERCEL') || getenv('NOW_REGION')) {
+        $tmpDir = sys_get_temp_dir();
+        $tmpDb = $tmpDir . '/scrumvibe.db';
+        if (!file_exists($tmpDb) && file_exists($dbPath)) {
+            @copy($dbPath, $tmpDb);
+        }
+        $dbPath = $tmpDb;
+    }
+
+    try {
+        $pdo = new PDO("sqlite:" . $dbPath);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $dbDriver = 'sqlite';
+        $dbSource = 'SQLite (' . basename($dbPath) . ')';
+    } catch (PDOException $e) {
+        die("Database Error: " . $e->getMessage());
+    }
+}
+
+// 4. Create Tables if not exist (ANSI SQL compatible with both PostgreSQL and SQLite)
 try {
-    $pdo = new PDO("sqlite:" . $dbPath);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-
-    // Create Tables if not exist
-    $pdo->exec("
+    $pdo->exec('
         CREATE TABLE IF NOT EXISTS teams (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            project_title TEXT NOT NULL,
+            id VARCHAR(100) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            project_title VARCHAR(255) DEFAULT \'\',
             description TEXT,
             sprint_number INTEGER DEFAULT 1,
-            created_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS members (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            role TEXT NOT NULL,
-            team_id TEXT,
-            phone TEXT,
-            email TEXT,
-            university TEXT,
-            major TEXT,
-            token TEXT UNIQUE NOT NULL,
-            created_at TEXT NOT NULL
+            id VARCHAR(100) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            role VARCHAR(50) NOT NULL,
+            team_id VARCHAR(100),
+            phone VARCHAR(50),
+            email VARCHAR(255),
+            university VARCHAR(255),
+            major VARCHAR(255),
+            token VARCHAR(255) UNIQUE NOT NULL,
+            password_hash TEXT DEFAULT \'\',
+            invite_used INTEGER DEFAULT 0,
+            created_at VARCHAR(50) NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS prds (
-            id TEXT PRIMARY KEY,
-            team_id TEXT NOT NULL,
-            title TEXT NOT NULL,
-            version TEXT DEFAULT '1.0',
-            status TEXT DEFAULT 'draft',
+            id VARCHAR(100) PRIMARY KEY,
+            team_id VARCHAR(100) NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            version VARCHAR(50) DEFAULT \'1.0\',
+            status VARCHAR(50) DEFAULT \'draft\',
             problem_statement TEXT,
             user_personas TEXT,
             user_stories TEXT,
             technical_notes TEXT,
             feedback_teacher TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS tasks (
-            id TEXT PRIMARY KEY,
-            team_id TEXT NOT NULL,
-            prd_id TEXT,
-            title TEXT NOT NULL,
+            id VARCHAR(100) PRIMARY KEY,
+            team_id VARCHAR(100) NOT NULL,
+            prd_id VARCHAR(100),
+            title VARCHAR(255) NOT NULL,
             description TEXT,
-            status TEXT NOT NULL,
-            role_category TEXT NOT NULL,
+            status VARCHAR(50) NOT NULL,
+            role_category VARCHAR(50) NOT NULL,
             story_points INTEGER DEFAULT 1,
-            priority TEXT DEFAULT 'medium',
-            assignee_id TEXT,
-            assignee_name TEXT,
+            priority VARCHAR(50) DEFAULT \'medium\',
+            assignee_id VARCHAR(100),
+            assignee_name VARCHAR(255),
             sprint_number INTEGER DEFAULT 1,
-            dependency_task_id TEXT,
-            dependency_task_title TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            dependency_task_id VARCHAR(100),
+            dependency_task_title VARCHAR(255),
+            created_at VARCHAR(50) NOT NULL,
+            updated_at VARCHAR(50) NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS logbooks (
-            id TEXT PRIMARY KEY,
-            team_id TEXT NOT NULL,
-            student_id TEXT NOT NULL,
-            student_name TEXT NOT NULL,
-            role TEXT NOT NULL,
-            university TEXT,
-            major TEXT,
+            id VARCHAR(100) PRIMARY KEY,
+            team_id VARCHAR(100) NOT NULL,
+            student_id VARCHAR(100) NOT NULL,
+            student_name VARCHAR(255) NOT NULL,
+            role VARCHAR(50) NOT NULL,
+            university VARCHAR(255),
+            major VARCHAR(255),
             week_number INTEGER NOT NULL,
-            entry_date TEXT NOT NULL,
+            entry_date VARCHAR(50) NOT NULL,
             description TEXT NOT NULL,
             proof_link TEXT,
             blockers TEXT,
             teacher_notes TEXT,
-            status TEXT DEFAULT 'submitted',
-            created_at TEXT NOT NULL
+            status VARCHAR(50) DEFAULT \'submitted\',
+            created_at VARCHAR(50) NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS lms_modules (
-            id TEXT PRIMARY KEY,
+            id VARCHAR(100) PRIMARY KEY,
             week_number INTEGER NOT NULL,
-            title TEXT NOT NULL,
+            title VARCHAR(255) NOT NULL,
             summary TEXT NOT NULL,
             content TEXT NOT NULL,
             objectives TEXT NOT NULL,
@@ -109,23 +203,33 @@ try {
         );
 
         CREATE TABLE IF NOT EXISTS system_settings (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
+            "key" VARCHAR(255) PRIMARY KEY,
+            "value" TEXT NOT NULL
         );
-    ");
+    ');
 
-    // Migration: add password_hash column to members (for password feature)
-    $cols = $pdo->query("PRAGMA table_info(members)")->fetchAll(PDO::FETCH_ASSOC);
-    $colNames = array_column($cols, 'name');
-    if (!in_array('password_hash', $colNames)) {
-        $pdo->exec("ALTER TABLE members ADD COLUMN password_hash TEXT DEFAULT ''");
-    }
-    if (!in_array('invite_used', $colNames)) {
-        $pdo->exec("ALTER TABLE members ADD COLUMN invite_used INTEGER DEFAULT 0");
+    // Migration: add columns to members if not present
+    if ($dbDriver === 'sqlite') {
+        $cols = $pdo->query("PRAGMA table_info(members)")->fetchAll(PDO::FETCH_ASSOC);
+        $colNames = array_column($cols, 'name');
+        if (!in_array('password_hash', $colNames)) {
+            $pdo->exec("ALTER TABLE members ADD COLUMN password_hash TEXT DEFAULT ''");
+        }
+        if (!in_array('invite_used', $colNames)) {
+            $pdo->exec("ALTER TABLE members ADD COLUMN invite_used INTEGER DEFAULT 0");
+        }
+    } else {
+        try {
+            $pdo->exec("ALTER TABLE members ADD COLUMN IF NOT EXISTS password_hash TEXT DEFAULT ''");
+            $pdo->exec("ALTER TABLE members ADD COLUMN IF NOT EXISTS invite_used INTEGER DEFAULT 0");
+        } catch (Throwable $e) {
+            // Ignore if columns already exist
+        }
     }
 
     // Check if database is seeded via system_settings
-    $stmt = $pdo->query("SELECT value FROM system_settings WHERE key = 'app_seeded'");
+    $stmt = $pdo->prepare('SELECT "value" FROM system_settings WHERE "key" = ?');
+    $stmt->execute(['app_seeded']);
     $seedSetting = $stmt->fetch();
 
     if (!$seedSetting) {
@@ -149,13 +253,16 @@ function seedInitialData($pdo) {
     // 1. Default Team (only if no teams exist at all)
     $teamCheck = $pdo->query("SELECT COUNT(*) as count FROM teams")->fetch();
     if ((int)($teamCheck['count'] ?? 0) === 0) {
-        $stmt = $pdo->prepare("INSERT OR IGNORE INTO teams (id, name, project_title, description, sprint_number, created_at) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO teams (id, name, project_title, description, sprint_number, created_at) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->execute(['team-1', 'kelompok 2 - fastrack september 2026', '', '', 1, $now]);
     }
 
-    // 2. Guru / Super Admin Member (use INSERT OR IGNORE to prevent UNIQUE constraint violation)
-    $stmt = $pdo->prepare("INSERT OR IGNORE INTO members (id, name, role, team_id, phone, email, university, major, token, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->execute(['mem-guru', 'Rendi Yusuf Azhari', 'guru', '', '6285234332322', 'ligerrendy@gmail.com', 'PT VINIX SEVEN AURUM', 'Program Fast Track', 'guru-master-token', $now]);
+    // 2. Guru / Super Admin Member (check-then-insert for universal compatibility)
+    $guruCheck = $pdo->query("SELECT COUNT(*) as count FROM members WHERE id = 'mem-guru'")->fetch();
+    if ((int)($guruCheck['count'] ?? 0) === 0) {
+        $stmt = $pdo->prepare("INSERT INTO members (id, name, role, team_id, phone, email, university, major, token, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute(['mem-guru', 'Rendi Yusuf Azhari', 'guru', '', '6285234332322', 'ligerrendy@gmail.com', 'PT VINIX SEVEN AURUM', 'Program Fast Track', 'guru-master-token', $now]);
+    }
     // 3. LMS Modules (8 Pertemuan Kurikulum Fast Track Web)
     $modules = [
         [
@@ -312,9 +419,13 @@ function seedInitialData($pdo) {
         ]
     ];
 
-    $stmt = $pdo->prepare("INSERT OR IGNORE INTO lms_modules (id, week_number, title, summary, objectives, deliverables, external_links, content, is_published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)");
+    $stmt = $pdo->prepare("INSERT INTO lms_modules (id, week_number, title, summary, objectives, deliverables, external_links, content, is_published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)");
+    $checkModule = $pdo->prepare("SELECT COUNT(*) as count FROM lms_modules WHERE id = ?");
     foreach ($modules as $m) {
-        $stmt->execute($m);
+        $checkModule->execute([$m[0]]);
+        if ((int)$checkModule->fetch()['count'] === 0) {
+            $stmt->execute($m);
+        }
     }
 
     // 4. System Settings
@@ -327,9 +438,11 @@ function seedInitialData($pdo) {
         ['weeklyReportTemplate', "*LAPORAN MINGGUAN SCRUM (WEEK {week})*\nKelompok: *{tim}*\nProyek: *{proyek}*\n\n*Progress & Velocity:*\n• Story Points Selesai: {completedPoints}/{totalPoints} ({percent}%)\n• Status Tiket: {doneCount} Selesai, {inProgressCount} Dikerjakan, {todoCount} Menunggu\n\n*Kontribusi Tim:*\n• PM: {pmStatus}\n• Backend: {beStatus}\n• Frontend: {feStatus}\n\n*Kepatuhan Logbook:*\n{logbookStatus}\n\nAkses Laporan: {link}"]
     ];
 
-    $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)");
+    $delStmt = $pdo->prepare('DELETE FROM system_settings WHERE "key" = ?');
+    $insStmt = $pdo->prepare('INSERT INTO system_settings ("key", "value") VALUES (?, ?)');
     foreach ($settings as $s) {
-        $stmt->execute($s);
+        $delStmt->execute([$s[0]]);
+        $insStmt->execute([$s[0], $s[1]]);
     }
 
     // 5. Initial Starter Kanban Tasks (if tasks table is empty)
@@ -369,7 +482,7 @@ function seedInitialData($pdo) {
         ];
 
         $stmtTask = $pdo->prepare("
-            INSERT OR IGNORE INTO tasks (id, team_id, prd_id, title, description, status, role_category, story_points, priority, assignee_id, assignee_name, sprint_number, dependency_task_id, dependency_task_title, created_at, updated_at)
+            INSERT INTO tasks (id, team_id, prd_id, title, description, status, role_category, story_points, priority, assignee_id, assignee_name, sprint_number, dependency_task_id, dependency_task_title, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         foreach ($starterTasks as $st) {
