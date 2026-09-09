@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // includes/auth.php - Stateless Serverless Auth & Session Persistence using Signed Cookies
 
 function getAuthSecret() {
@@ -10,9 +10,11 @@ function getAuthSecret() {
  */
 function initAuthSession() {
     if (session_status() === PHP_SESSION_NONE) {
-        ini_set('session.cookie_lifetime', (string)(86400 * 30));
-        ini_set('session.gc_maxlifetime', (string)(86400 * 30));
-        session_start();
+        if (!headers_sent()) {
+            @ini_set('session.cookie_lifetime', (string)(86400 * 30));
+            @ini_set('session.gc_maxlifetime', (string)(86400 * 30));
+        }
+        @session_start();
     }
 
     if (empty($_SESSION['scrumvibe_logged_in']) && !empty($_COOKIE['scrumvibe_auth'])) {
