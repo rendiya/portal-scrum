@@ -393,7 +393,7 @@ try {
             if (session_status() === PHP_SESSION_NONE) session_start();
             if (($_SESSION['scrumvibe_team_id'] ?? '') === $teamId) {
                 $rem = $pdo->query("SELECT id FROM teams ORDER BY created_at DESC LIMIT 1")->fetch();
-                $_SESSION['scrumvibe_team_id'] = $rem['id'] ?? 'team-1';
+                $_SESSION['scrumvibe_team_id'] = $rem ? $rem['id'] : '';
             }
 
             echo json_encode(['success' => true, 'message' => 'Kelompok berhasil dihapus! Siswa di dalamnya kini berstatus belum ada kelompok.']);
@@ -404,6 +404,7 @@ try {
             $memId = 'mem-' . round(microtime(true) * 1000) . '-' . substr(md5(rand()), 0, 4);
             $token = 'ft-' . bin2hex(random_bytes(6));
             $now = date('Y-m-d H:i:s');
+            $teamIdInput = !empty($input['team_id']) ? $input['team_id'] : null;
             $stmt = $pdo->prepare("
                 INSERT INTO members (id, name, role, team_id, phone, email, university, major, token, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -412,7 +413,7 @@ try {
                 $memId,
                 $input['name'] ?? 'Siswa',
                 'siswa',
-                $input['team_id'] ?? 'team-1',
+                $teamIdInput,
                 $input['phone'] ?? '',
                 $input['email'] ?? '',
                 $input['university'] ?? '',
@@ -426,6 +427,14 @@ try {
         // 11. Delete Member
         case 'delete_member':
             $memId = $input['id'] ?? $_GET['id'] ?? '';
+            // Protect guru from deletion
+            $stmtMem = $pdo->prepare("SELECT role FROM members WHERE id = ?");
+            $stmtMem->execute([$memId]);
+            $memData = $stmtMem->fetch();
+            if ($memData && ($memData['role'] === 'guru' || $memData['role'] === 'super_admin')) {
+                echo json_encode(['success' => false, 'error' => 'Akun Guru / Instruktur tidak dapat dihapus.']);
+                exit;
+            }
             $stmt = $pdo->prepare("DELETE FROM members WHERE id = ?");
             $stmt->execute([$memId]);
             echo json_encode(['success' => true, 'message' => 'Anggota berhasil dihapus']);

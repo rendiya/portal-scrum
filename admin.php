@@ -125,11 +125,18 @@ $appBaseUrl = $scheme . "://" . $host;
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-black mb-1">Kelompok Tim *</label>
-                        <select name="team_id" class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-xs font-black text-black focus:outline-none">
-                            <?php foreach ($teams as $t): ?>
-                                <option value="<?= htmlspecialchars($t['id']) ?>"><?= htmlspecialchars($t['name']) ?></option>
-                            <?php endforeach; ?>
+                        <select name="team_id" class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-xs font-black text-black focus:outline-none" <?= empty($teams) ? 'disabled' : '' ?>>
+                            <?php if (empty($teams)): ?>
+                                <option value="">-- Belum ada kelompok --</option>
+                            <?php else: ?>
+                                <?php foreach ($teams as $t): ?>
+                                    <option value="<?= htmlspecialchars($t['id']) ?>"><?= htmlspecialchars($t['name']) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
+                        <?php if (empty($teams)): ?>
+                            <p class="text-[11px] text-rose-600 font-bold mt-1">⚠️ Buat kelompok siswa baru terlebih dahulu di formulir samping sebelum mendaftarkan siswa.</p>
+                        <?php endif; ?>
                     </div>
 
                     <div>
@@ -157,7 +164,7 @@ $appBaseUrl = $scheme . "://" . $host;
                     Semua siswa memiliki fungsi dan hak akses yang sama di dalam tim. Siswa bebas berkolaborasi dan memilih tugas (Frontend, Backend, PRD) di Scrum Board.
                 </div>
 
-                <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-black text-xs shadow-sm transition active:scale-98">
+                <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-black text-xs shadow-sm transition active:scale-98" <?= empty($teams) ? 'disabled opacity-50 cursor-not-allowed' : '' ?>>
                     + Daftarkan Siswa ke Tim
                 </button>
             </form>
@@ -181,6 +188,13 @@ $appBaseUrl = $scheme . "://" . $host;
         </div>
 
         <!-- Cards per Team -->
+        <?php if (empty($teams)): ?>
+            <div class="py-12 px-4 text-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-300">
+                <div class="text-3xl mb-2">👥</div>
+                <h3 class="text-sm font-black text-slate-800">Belum ada kelompok yang dibuat</h3>
+                <p class="text-xs text-slate-500 font-medium mt-1">Gunakan formulir "Buat Kelompok Siswa Baru" di atas untuk menambahkan kelompok kerja Scrum.</p>
+            </div>
+        <?php else: ?>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             <?php foreach ($teams as $t): 
                 $teamMems = $teamStudentsMap[$t['id']] ?? [];
@@ -238,6 +252,7 @@ $appBaseUrl = $scheme . "://" . $host;
                 </div>
             <?php endforeach; ?>
         </div>
+        <?php endif; ?>
 
         <!-- Unassigned Students Warning / Box if any -->
         <?php if (!empty($unassignedStudents)): ?>
@@ -562,6 +577,10 @@ async function handleCreateTeam(e) {
 async function handleAddMember(e) {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target).entries());
+    if (!data.team_id) {
+        await showAppAlert('Silakan buat kelompok terlebih dahulu sebelum mendaftarkan siswa.');
+        return;
+    }
     try {
         const res = await fetch('api.php?action=add_member', {
             method: 'POST',

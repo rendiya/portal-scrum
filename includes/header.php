@@ -60,7 +60,7 @@ if ($currentRole === 'siswa') {
     if (isset($_GET['team_id'])) {
         $_SESSION['scrumvibe_team_id'] = $_GET['team_id'];
     }
-    $currentTeamId = $_SESSION['scrumvibe_team_id'] ?? 'team-1';
+    $currentTeamId = $_SESSION['scrumvibe_team_id'] ?? '';
     $currentStudent = null;
     $currentStudentId = null;
     $currentMember = $currentGuru;
@@ -80,11 +80,17 @@ if (!$currentTeam && count($allTeams) > 0) {
     $currentTeam = $allTeams[0];
     $currentTeamId = $currentTeam['id'];
 }
+if (!$currentTeam) {
+    $currentTeamId = '';
+}
 
 // Fetch team students for current team
-$stmt = $pdo->prepare("SELECT * FROM members WHERE team_id = ? AND (role = 'siswa' OR role != 'guru') ORDER BY name ASC");
-$stmt->execute([$currentTeamId]);
-$teamStudents = $stmt->fetchAll();
+$teamStudents = [];
+if (!empty($currentTeamId)) {
+    $stmt = $pdo->prepare("SELECT * FROM members WHERE team_id = ? AND (role = 'siswa' OR role != 'guru') ORDER BY name ASC");
+    $stmt->execute([$currentTeamId]);
+    $teamStudents = $stmt->fetchAll();
+}
 
 $rolesDef = [
     'guru' => ['label' => 'Guru / Instruktur', 'badge' => 'badge-role-admin', 'color' => '#581c87'],

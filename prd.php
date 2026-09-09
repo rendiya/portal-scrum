@@ -94,7 +94,7 @@ $viewMode = $_GET['mode'] ?? 'doc'; // 'doc' (Tampilan Dokumen Rapi) atau 'edit'
                         Judul Proyek Belum Ditentukan
                     </div>
                     <p class="text-xs text-black font-semibold mt-0.5">
-                        Kelompok <b><?= htmlspecialchars($currentTeam['name']) ?></b> belum memiliki judul proyek. Mahasiswa diharapkan mengisikan judul proyek / aplikasi di sini.
+                        Kelompok <b><?= htmlspecialchars($currentTeam['name'] ?? 'Tim') ?></b> belum memiliki judul proyek. Mahasiswa diharapkan mengisikan judul proyek / aplikasi di sini.
                     </p>
                 </div>
                 <button type="button" onclick="openEditProjectTitleModal()" class="px-4 py-2 bg-[#043399] hover:bg-[#021f5c] text-white text-xs font-black rounded-lg transition shrink-0 shadow-xs">
@@ -588,7 +588,7 @@ async function handleSaveProjectTitle(e) {
     <div class="bg-white w-full max-w-md rounded-2xl border-2 border-slate-300 shadow-2xl overflow-hidden p-6 space-y-4" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between border-b border-slate-200 pb-3">
             <div>
-                <span class="text-[10px] font-black text-[#043399] uppercase tracking-wider block">Kelompok: <?= htmlspecialchars($currentTeam['name']) ?></span>
+                <span class="text-[10px] font-black text-[#043399] uppercase tracking-wider block">Kelompok: <?= htmlspecialchars($currentTeam['name'] ?? '-') ?></span>
                 <h3 class="text-sm font-black text-black">Tentukan Judul Proyek / Aplikasi</h3>
             </div>
             <button type="button" onclick="closeEditProjectTitleModal()" class="text-slate-500 hover:text-black text-xl font-black px-2 leading-none" title="Tutup Modal">&times;</button>

@@ -124,11 +124,11 @@ try {
         $pdo->exec("ALTER TABLE members ADD COLUMN invite_used INTEGER DEFAULT 0");
     }
 
-    // Check if seeded
-    $stmt = $pdo->query("SELECT COUNT(*) as count FROM teams");
-    $rowCount = (int)$stmt->fetch()['count'];
+    // Check if database is seeded via system_settings
+    $stmt = $pdo->query("SELECT value FROM system_settings WHERE key = 'app_seeded'");
+    $seedSetting = $stmt->fetch();
 
-    if ($rowCount === 0) {
+    if (!$seedSetting) {
         seedInitialData($pdo);
     } else {
         // Ensure 8 modules are populated if old database had only 4
@@ -146,12 +146,15 @@ try {
 function seedInitialData($pdo) {
     $now = date('Y-m-d H:i:s');
 
-    // 1. Default Team
-    $stmt = $pdo->prepare("INSERT INTO teams (id, name, project_title, description, sprint_number, created_at) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->execute(['team-1', 'kelompok 2 - fastrack september 2026', '', '', 1, $now]);
+    // 1. Default Team (only if no teams exist at all)
+    $teamCheck = $pdo->query("SELECT COUNT(*) as count FROM teams")->fetch();
+    if ((int)($teamCheck['count'] ?? 0) === 0) {
+        $stmt = $pdo->prepare("INSERT OR IGNORE INTO teams (id, name, project_title, description, sprint_number, created_at) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute(['team-1', 'kelompok 2 - fastrack september 2026', '', '', 1, $now]);
+    }
 
-    // 2. Guru / Super Admin Member
-    $stmt = $pdo->prepare("INSERT INTO members (id, name, role, team_id, phone, email, university, major, token, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    // 2. Guru / Super Admin Member (use INSERT OR IGNORE to prevent UNIQUE constraint violation)
+    $stmt = $pdo->prepare("INSERT OR IGNORE INTO members (id, name, role, team_id, phone, email, university, major, token, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute(['mem-guru', 'Rendi Yusuf Azhari', 'guru', '', '6285234332322', 'ligerrendy@gmail.com', 'PT VINIX SEVEN AURUM', 'Program Fast Track', 'guru-master-token', $now]);
     // 3. LMS Modules (8 Pertemuan Kurikulum Fast Track Web)
     $modules = [
@@ -309,13 +312,14 @@ function seedInitialData($pdo) {
         ]
     ];
 
-    $stmt = $pdo->prepare("INSERT INTO lms_modules (id, week_number, title, summary, objectives, deliverables, external_links, content, is_published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)");
+    $stmt = $pdo->prepare("INSERT OR IGNORE INTO lms_modules (id, week_number, title, summary, objectives, deliverables, external_links, content, is_published) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)");
     foreach ($modules as $m) {
         $stmt->execute($m);
     }
 
-    // 7. System Settings
+    // 4. System Settings
     $settings = [
+        ['app_seeded', '1'],
         ['waGatewayUrl', 'https://api.fonnte.com/send'],
         ['waApiToken', ''],
         ['waSenderNumber', ''],
