@@ -36,10 +36,16 @@ $lmsModules = $stmt->fetchAll();
 $waGatewayUrl = getSystemSetting($pdo, 'waGatewayUrl', 'https://api.fonnte.com/send');
 $waApiToken = getSystemSetting($pdo, 'waApiToken', '');
 $waSenderNumber = getSystemSetting($pdo, 'waSenderNumber', '');
-$invitationTemplate = getSystemSetting($pdo, 'invitationTemplate', "Halo {nama}!\n\nKamu telah diundang oleh {guru} untuk bergabung ke Tim Proyek Scrum *{tim}* sebagai *{role}*.\n\nSilakan akses aplikasi melalui tautan berikut:\n{link}\n\nSelamat belajar dan berkolaborasi!");
+$defaultInvitationTemplate = "Halo {nama}!\n\nKamu telah diundang oleh {guru} untuk bergabung ke Tim Proyek Scrum *{tim}* sebagai *{role}*.\n\nSilakan aktivasi akun dan buat kata sandi Anda melalui tautan undangan berikut:\n{invite_link}\n\nSelamat belajar dan berkolaborasi!";
+$invitationTemplate = getSystemSetting($pdo, 'invitationTemplate', $defaultInvitationTemplate);
 $weeklyReportTemplate = getSystemSetting($pdo, 'weeklyReportTemplate', '');
 
-$appBaseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . dirname($_SERVER['REQUEST_URI']);
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+           (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+           (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+$scheme = $isHttps ? "https" : "http";
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+$appBaseUrl = $scheme . "://" . $host;
 ?>
 
 <div class="space-y-8">
@@ -294,8 +300,8 @@ $appBaseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" 
                         $guruName = $currentUserName ?? 'Guru/Instruktur';
                         $inviteLink = $appBaseUrl . '/invite.php?token=' . urlencode($m['token']);
                         $inviteMsg = str_replace(
-                            ['{nama}', '{guru}', '{tim}', '{role}', '{link}', '{invite_link}'],
-                            [$m['name'], $guruName, ($m['team_name'] ?: 'Tim Scrum'), $roleName, $appBaseUrl, $inviteLink],
+                            ['{nama}', '{guru}', '{tim}', '{role}', '{invite_link}', '{link}'],
+                            [$m['name'], $guruName, ($m['team_name'] ?: 'Tim Scrum'), $roleName, $inviteLink, $inviteLink],
                             $invitationTemplate
                         );
                     ?>

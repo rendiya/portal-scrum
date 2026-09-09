@@ -666,10 +666,12 @@ try {
             $pdo->prepare("UPDATE members SET password_hash = '', invite_used = 0 WHERE id = ?")->execute([$memberId]);
 
             // Build invite link
-            $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+            $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+                       (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+                       (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+            $scheme = $isHttps ? 'https' : 'http';
             $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
-            $dir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
-            $baseUrl = $scheme . '://' . $host . $dir;
+            $baseUrl = $scheme . '://' . $host;
             $inviteLink = $baseUrl . '/invite.php?token=' . urlencode($member['token']);
 
             echo json_encode([
