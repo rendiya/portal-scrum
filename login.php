@@ -1,5 +1,5 @@
 <?php
-// login.php - Halaman Login Berdasarkan Peran (Guru & Siswa) - Form Langsung Tanpa Dropdown
+// login.php - Halaman Login Tunggal (Guru & Siswa) Terpadu
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -9,26 +9,23 @@ require_once __DIR__ . '/includes/whatsapp.php';
 
 // Jika pengguna sudah memiliki sesi login aktif, otomatis redirect ke beranda
 if (!empty($_SESSION['scrumvibe_logged_in'])) {
-    header('Location: index.php');
+    if (($_SESSION['scrumvibe_role'] ?? '') === 'siswa') {
+        header('Location: board.php');
+    } else {
+        header('Location: index.php');
+    }
     exit;
 }
 
-// Ambil data tim dan anggota untuk keperluan demo
+// Ambil data tim untuk fallback
 $stmt = $pdo->query("SELECT * FROM teams ORDER BY name ASC");
 $teams = $stmt->fetchAll();
-
-$stmt = $pdo->query("SELECT * FROM members WHERE role = 'guru' OR role = 'super_admin' ORDER BY name ASC");
-$gurus = $stmt->fetchAll();
 
 $errorMsg = '';
 $successMsg = '';
 $forgotSuccess = null;
 $action = $_POST['action'] ?? '';
 $isForgot = isset($_GET['forgot']) || ($action === 'forgot_password');
-$activeTab = $_GET['role'] ?? 'guru';
-if (!in_array($activeTab, ['guru', 'siswa'])) {
-    $activeTab = 'guru';
-}
 
 if (isset($_GET['logout'])) {
     $successMsg = 'Anda telah berhasil keluar dari sistem.';
@@ -38,108 +35,66 @@ if (isset($_GET['logout'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
-    if ($action === 'login_guru') {
-        $activeTab = 'guru';
-        $identifier = trim($_POST['identifier'] ?? '');
-
-        if (empty($identifier)) {
-            $errorMsg = 'Silakan masukkan email, nomor WhatsApp, atau nama Guru.';
-        } else {
-            $stmt = $pdo->prepare("
-                SELECT * FROM members 
-                WHERE (LOWER(email) = LOWER(?) OR phone = ? OR LOWER(name) LIKE LOWER(?) OR token = ?) 
-                  AND (role = 'guru' OR role = 'super_admin') 
-                LIMIT 1
-            ");
-            $stmt->execute([$identifier, $identifier, "%$identifier%", $identifier]);
-            $selectedGuru = $stmt->fetch();
-
-            if (!$selectedGuru && (
-                strtolower($identifier) === 'guru' || 
-                strtolower($identifier) === 'admin' || 
-                strtolower($identifier) === 'guru.scrum@sekolah.sch.id' || 
-                stripos($identifier, 'hendra') !== false || 
-                count($gurus) === 1
-            )) {
-                $selectedGuru = $gurus[0] ?? null;
-            }
-
-            if ($selectedGuru) {
-                $password = $_POST['password'] ?? '';
-                if (!empty($selectedGuru['password_hash'])) {
-                    if (empty($password) || !password_verify($password, $selectedGuru['password_hash'])) {
-                        $errorMsg = 'Kata sandi salah. Silakan coba lagi.';
-                        $selectedGuru = null;
-                    }
-                }
-            }
-
-            if ($selectedGuru) {
-                $_SESSION['scrumvibe_logged_in'] = true;
-                $_SESSION['scrumvibe_role'] = 'guru';
-                $_SESSION['scrumvibe_user_id'] = $selectedGuru['id'];
-                $_SESSION['scrumvibe_user_name'] = $selectedGuru['name'];
-                $_SESSION['scrumvibe_team_id'] = $teams[0]['id'] ?? 'team-1';
-                unset($_SESSION['scrumvibe_student_id']);
-
-                header('Location: index.php');
-                exit;
-            } elseif (empty($errorMsg)) {
-                $errorMsg = 'Akun Guru tidak ditemukan. Pastikan email atau nama yang dimasukkan sudah terdaftar.';
-            }
-        }
-    } elseif ($action === 'login_siswa') {
-        $activeTab = 'siswa';
+    if ($action === 'login') {
         $identifier = trim($_POST['identifier'] ?? '');
         $password   = $_POST['password'] ?? '';
 
         if (empty($identifier)) {
-            $errorMsg = 'Silakan masukkan nama siswa, email, atau nomor WhatsApp.';
+            $errorMsg = 'Silakan masukkan email, nomor WhatsApp, atau nama akun Anda.';
         } else {
+            // Cari akun berdasarkan email, phone, token, atau nama
             $stmt = $pdo->prepare("
-                SELECT * FROM members
-                WHERE (LOWER(email) = LOWER(?) OR phone = ? OR token = ? OR LOWER(name) LIKE LOWER(?))
-                  AND (role = 'siswa' OR (role != 'guru' AND role != 'super_admin'))
+                SELECT * FROM members 
+                WHERE LOWER(email) = LOWER(?) OR phone = ? OR token = ? OR LOWER(name) = LOWER(?)
                 LIMIT 1
             ");
-            $stmt->execute([$identifier, $identifier, $identifier, "%$identifier%"]);
-            $selectedStudent = $stmt->fetch();
+            $stmt->execute([$identifier, $identifier, $identifier, $identifier]);
+            $user = $stmt->fetch();
 
-            if (!$selectedStudent) {
-                $stmt = $pdo->prepare("SELECT * FROM members WHERE LOWER(name) LIKE LOWER(?) AND (role = 'siswa' OR (role != 'guru' AND role != 'super_admin')) LIMIT 1");
+            if (!$user) {
+                // Fallback pencarian fuzzy LIKE nama
+                $stmt = $pdo->prepare("SELECT * FROM members WHERE LOWER(name) LIKE LOWER(?) LIMIT 1");
                 $stmt->execute(["%$identifier%"]);
-                $selectedStudent = $stmt->fetch();
+                $user = $stmt->fetch();
             }
 
-            if ($selectedStudent) {
-                // Password check: if password_hash is set, must verify; if empty, allow without password
-                $hasPassword = !empty($selectedStudent['password_hash']);
-                $passwordOk = false;
+            if ($user) {
+                // Pengecekan kata sandi jika user memiliki password_hash
+                $hasPassword = !empty($user['password_hash']);
                 if ($hasPassword) {
                     if (empty($password)) {
-                        $errorMsg = 'Akun ini sudah memiliki kata sandi. Silakan isi kolom Kata Sandi.';
-                        $selectedStudent = null;
-                    } elseif (!password_verify($password, $selectedStudent['password_hash'])) {
-                        $errorMsg = 'Kata sandi salah. Silakan coba lagi atau hubungi Guru untuk reset link undangan.';
-                        $selectedStudent = null;
-                    } else {
-                        $passwordOk = true;
+                        $errorMsg = 'Akun ini memiliki kata sandi. Silakan masukkan kata sandi Anda.';
+                        $user = null;
+                    } elseif (!password_verify($password, $user['password_hash'])) {
+                        $errorMsg = 'Kata sandi salah. Silakan coba lagi atau gunakan fitur Lupa Kata Sandi.';
+                        $user = null;
                     }
                 }
             }
 
-            if ($selectedStudent) {
+            if ($user) {
                 $_SESSION['scrumvibe_logged_in'] = true;
-                $_SESSION['scrumvibe_role'] = 'siswa';
-                $_SESSION['scrumvibe_user_id'] = $selectedStudent['id'];
-                $_SESSION['scrumvibe_user_name'] = $selectedStudent['name'];
-                $_SESSION['scrumvibe_student_id'] = $selectedStudent['id'];
-                $_SESSION['scrumvibe_team_id'] = $selectedStudent['team_id'] ?: ($teams[0]['id'] ?? 'team-1');
+                $_SESSION['scrumvibe_user_id'] = $user['id'];
+                $_SESSION['scrumvibe_user_name'] = $user['name'];
 
-                header('Location: board.php');
-                exit;
+                $isGuru = ($user['role'] === 'guru' || $user['role'] === 'super_admin');
+                if ($isGuru) {
+                    $_SESSION['scrumvibe_role'] = 'guru';
+                    $_SESSION['scrumvibe_team_id'] = $teams[0]['id'] ?? 'team-1';
+                    unset($_SESSION['scrumvibe_student_id']);
+
+                    header('Location: index.php');
+                    exit;
+                } else {
+                    $_SESSION['scrumvibe_role'] = 'siswa';
+                    $_SESSION['scrumvibe_student_id'] = $user['id'];
+                    $_SESSION['scrumvibe_team_id'] = $user['team_id'] ?: ($teams[0]['id'] ?? 'team-1');
+
+                    header('Location: board.php');
+                    exit;
+                }
             } elseif (empty($errorMsg)) {
-                $errorMsg = 'Akun Siswa tidak ditemukan. Pastikan nama siswa, email, atau no. WhatsApp sudah sesuai.';
+                $errorMsg = 'Akun tidak ditemukan. Pastikan email, nama, atau no. WhatsApp sudah terdaftar.';
             }
         }
     } elseif ($action === 'forgot_password') {
@@ -251,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Main Content Container -->
     <main class="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div class="bg-white max-w-lg w-full rounded-2xl border-2 border-slate-300 shadow-xl overflow-hidden my-auto">
+        <div class="bg-white max-w-md w-full rounded-2xl border-2 border-slate-300 shadow-xl overflow-hidden my-auto">
             
             <!-- Brand Header -->
             <div class="pt-8 pb-6 px-6 text-center border-b-2 border-slate-100 bg-gradient-to-b from-blue-50/40 to-white">
@@ -352,18 +307,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
 
             <?php else: ?>
-                <!-- Role Tabs (Guru vs Siswa) -->
-                <div class="grid grid-cols-2 border-b-2 border-slate-200 bg-slate-50">
-                    <button type="button" id="tabBtnGuru" onclick="switchLoginTab('guru')" class="py-3.5 px-4 text-center transition font-black text-xs sm:text-sm border-b-2 <?= $activeTab === 'guru' ? 'bg-white text-[#043399] border-[#043399] shadow-xs' : 'text-slate-600 border-transparent hover:text-black hover:bg-slate-100' ?>">
-                        <span>Guru / Instruktur</span>
-                        <span class="block text-[10px] font-medium text-slate-500 mt-0.5">Akses Super Admin</span>
-                    </button>
-                    <button type="button" id="tabBtnSiswa" onclick="switchLoginTab('siswa')" class="py-3.5 px-4 text-center transition font-black text-xs sm:text-sm border-b-2 <?= $activeTab === 'siswa' ? 'bg-white text-[#043399] border-[#043399] shadow-xs' : 'text-slate-600 border-transparent hover:text-black hover:bg-slate-100' ?>">
-                        <span>Siswa (Kelompok)</span>
-                        <span class="block text-[10px] font-medium text-slate-500 mt-0.5">Kolaborasi Tim Scrum</span>
-                    </button>
-                </div>
-
                 <!-- Messages (Error & Success) -->
                 <div class="p-6 pb-0 space-y-3">
                     <?php if (!empty($errorMsg)): ?>
@@ -379,61 +322,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                 </div>
 
-                <!-- TAB 1: FORM LOGIN GURU (LANGSUNG FORM INPUT) -->
-                <div id="tabContentGuru" class="p-6 pt-4 space-y-5 <?= $activeTab === 'guru' ? '' : 'hidden' ?>">
-                    <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-950 font-medium">
-                        Portal Guru: Kelola kelompok proyek, evaluasi logbook siswa, review PRD, kelola kurikulum LMS, dan pantau seluruh tim.
-                    </div>
-
-                    <form id="guruForm" method="POST" action="login.php" class="space-y-4">
-                        <input type="hidden" name="action" value="login_guru">
+                <!-- SINGLE UNIFIED LOGIN FORM -->
+                <div class="p-6 pt-4 space-y-5">
+                    <form id="loginForm" method="POST" action="login.php" class="space-y-4">
+                        <input type="hidden" name="action" value="login">
 
                         <div>
-                            <label class="block text-xs font-black text-black mb-1">Email, No. WhatsApp, atau Nama Guru *</label>
-                            <input type="text" id="guruIdentifier" name="identifier" required placeholder="Contoh: guru@sekolah.sch.id atau nama" value="<?= $activeTab === 'guru' && !empty($_POST['identifier']) ? htmlspecialchars($_POST['identifier']) : '' ?>" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                            <label class="block text-xs font-black text-black mb-1">Email, No. WhatsApp, atau Nama Akun *</label>
+                            <input type="text" id="identifier" name="identifier" required placeholder="Masukkan email, WhatsApp, atau nama" value="<?= !empty($_POST['identifier']) ? htmlspecialchars($_POST['identifier']) : '' ?>" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
                         </div>
 
                         <div>
                             <div class="flex items-center justify-between mb-1">
-                                <label class="block text-xs font-black text-black">Kata Sandi / Password *</label>
-                                <a href="login.php?forgot=1&role=guru" class="text-[11px] text-[#043399] font-bold hover:underline">Lupa kata sandi?</a>
+                                <label class="block text-xs font-black text-black">Kata Sandi / Password</label>
+                                <a href="login.php?forgot=1" class="text-[11px] text-[#043399] font-bold hover:underline">Lupa kata sandi?</a>
                             </div>
-                            <input type="password" id="guruPassword" name="password" required placeholder="Masukkan kata sandi" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-mono font-medium text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                            <input type="password" id="password" name="password" placeholder="Masukkan kata sandi akun Anda" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-mono font-medium text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
                         </div>
 
                         <button type="submit" class="w-full py-3 px-4 rounded-xl bg-[#043399] hover:bg-[#021f5c] text-white font-black text-xs sm:text-sm shadow-md transition active:scale-98">
-                            Masuk sebagai Guru / Instruktur &rarr;
-                        </button>
-                    </form>
-                </div>
-
-                <!-- TAB 2: FORM LOGIN SISWA (LANGSUNG FORM INPUT) -->
-                <div id="tabContentSiswa" class="p-6 pt-4 space-y-5 <?= $activeTab === 'siswa' ? '' : 'hidden' ?>">
-                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-950 font-medium">
-                        Portal Siswa: Kelola tiket tugas di Scrum Board, isi catatan logbook harian, dan susun Product Requirement Document (PRD).
-                    </div>
-
-                    <form id="siswaForm" method="POST" action="login.php" class="space-y-4">
-                        <input type="hidden" name="action" value="login_siswa">
-
-                        <div>
-                            <label class="block text-xs font-black text-black mb-1">Nama Siswa, Email, atau No. WhatsApp *</label>
-                            <input type="text" id="siswaIdentifier" name="identifier" required placeholder="Contoh: Nama siswa, email, atau no. WhatsApp" value="<?= $activeTab === 'siswa' && !empty($_POST['identifier']) ? htmlspecialchars($_POST['identifier']) : '' ?>" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
-                        </div>
-
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="block text-xs font-black text-black">Kata Sandi Siswa</label>
-                                <a href="login.php?forgot=1&role=siswa" class="text-[11px] text-[#043399] font-bold hover:underline">Lupa kata sandi?</a>
-                            </div>
-                            <input type="password" id="siswaPassword" name="password" placeholder="Masukkan kata sandi (jika sudah diatur)" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-mono font-medium text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
-                            <p class="mt-1.5 text-[11px] text-slate-400">
-                                Belum pernah set kata sandi? Gunakan link aktivasi undangan dari Guru.
-                            </p>
-                        </div>
-
-                        <button type="submit" class="w-full py-3 px-4 rounded-xl bg-[#043399] hover:bg-[#021f5c] text-white font-black text-xs sm:text-sm shadow-md transition active:scale-98">
-                            Masuk sebagai Siswa &rarr;
+                            Masuk ke Aplikasi &rarr;
                         </button>
                     </form>
                 </div>
@@ -455,27 +363,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </footer>
 
-    <script>
-    function switchLoginTab(role) {
-        const tabGuru = document.getElementById('tabContentGuru');
-        const tabSiswa = document.getElementById('tabContentSiswa');
-        const btnGuru = document.getElementById('tabBtnGuru');
-        const btnSiswa = document.getElementById('tabBtnSiswa');
-
-        if (role === 'guru') {
-            tabGuru.classList.remove('hidden');
-            tabSiswa.classList.add('hidden');
-
-            btnGuru.className = 'py-3.5 px-4 text-center transition font-black text-xs sm:text-sm border-b-2 bg-white text-[#043399] border-[#043399] shadow-xs';
-            btnSiswa.className = 'py-3.5 px-4 text-center transition font-black text-xs sm:text-sm border-b-2 text-slate-600 border-transparent hover:text-black hover:bg-slate-100';
-        } else {
-            tabGuru.classList.add('hidden');
-            tabSiswa.classList.remove('hidden');
-
-            btnSiswa.className = 'py-3.5 px-4 text-center transition font-black text-xs sm:text-sm border-b-2 bg-white text-[#043399] border-[#043399] shadow-xs';
-            btnGuru.className = 'py-3.5 px-4 text-center transition font-black text-xs sm:text-sm border-b-2 text-slate-600 border-transparent hover:text-black hover:bg-slate-100';
-        }
-    }
-    </script>
 </body>
 </html>
