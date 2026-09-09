@@ -1,13 +1,12 @@
 <?php
 // login.php - Halaman Login Tunggal (Guru & Siswa) Terpadu
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/includes/auth.php';
+initAuthSession();
 
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/whatsapp.php';
 
-// Jika pengguna sudah memiliki sesi login aktif, otomatis redirect ke beranda
+// Jika pengguna sudah memiliki sesi login aktif (termasuk dari signed cookie), otomatis redirect ke beranda
 if (!empty($_SESSION['scrumvibe_logged_in'])) {
     if (($_SESSION['scrumvibe_role'] ?? '') === 'siswa') {
         header('Location: board.php');
@@ -112,16 +111,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $isGuru = ($user['role'] === 'guru' || $user['role'] === 'super_admin');
                 if ($isGuru) {
+                    $teamId = $teams[0]['id'] ?? '';
                     $_SESSION['scrumvibe_role'] = 'guru';
-                    $_SESSION['scrumvibe_team_id'] = $teams[0]['id'] ?? 'team-1';
+                    $_SESSION['scrumvibe_team_id'] = $teamId;
                     unset($_SESSION['scrumvibe_student_id']);
+
+                    issueAuthCookie($user['id'], $user['name'], 'guru', $teamId, null);
 
                     header('Location: index.php');
                     exit;
                 } else {
+                    $teamId = $user['team_id'] ?: ($teams[0]['id'] ?? '');
                     $_SESSION['scrumvibe_role'] = 'siswa';
                     $_SESSION['scrumvibe_student_id'] = $user['id'];
-                    $_SESSION['scrumvibe_team_id'] = $user['team_id'] ?: ($teams[0]['id'] ?? 'team-1');
+                    $_SESSION['scrumvibe_team_id'] = $teamId;
+
+                    issueAuthCookie($user['id'], $user['name'], 'siswa', $teamId, $user['id']);
 
                     header('Location: board.php');
                     exit;

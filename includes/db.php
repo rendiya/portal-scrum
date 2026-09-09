@@ -331,6 +331,51 @@ function seedInitialData($pdo) {
     foreach ($settings as $s) {
         $stmt->execute($s);
     }
+
+    // 5. Initial Starter Kanban Tasks (if tasks table is empty)
+    $taskCheck = $pdo->query("SELECT COUNT(*) as count FROM tasks")->fetch();
+    if ((int)($taskCheck['count'] ?? 0) === 0) {
+        $starterTasks = [
+            [
+                'task-init-1', 'team-1', null,
+                'Menyusun Dokumen PRD dan User Stories',
+                'Rumuskan Problem Statement, 2 User Persona, dan minimal 8 User Story dengan format yang jelas.',
+                'done', 'pm', 3, 'high', null, null, 1, null, null, $now, $now
+            ],
+            [
+                'task-init-2', 'team-1', null,
+                'Membuat Wireframe & Prototype Interaktif di Figma',
+                'Rancang mockup UI untuk 5 halaman utama serta susun mini design system (warna dan tipografi).',
+                'in_progress', 'frontend', 5, 'high', null, null, 1, null, null, $now, $now
+            ],
+            [
+                'task-init-3', 'team-1', null,
+                'Merancang Skema Database & Kontrak API',
+                'Buat ERD minimal 4 tabel dan definisikan kontrak endpoint REST API antara frontend dan backend.',
+                'in_progress', 'backend', 5, 'high', null, null, 1, null, null, $now, $now
+            ],
+            [
+                'task-init-4', 'team-1', null,
+                'Setup Repository Git & Standarisasi Commit',
+                'Inisialisasi git repository tim, tentukan branch workflow, dan standarisasi commit message.',
+                'sprint_backlog', 'backend', 2, 'medium', null, null, 1, null, null, $now, $now
+            ],
+            [
+                'task-init-5', 'team-1', null,
+                'Membuat Halaman Landing Page Responsif (HTML/CSS)',
+                'Slicing desain mockup menjadi tampilan web responsif mobile-first tanpa framework.',
+                'sprint_backlog', 'frontend', 5, 'medium', null, null, 1, null, null, $now, $now
+            ]
+        ];
+
+        $stmtTask = $pdo->prepare("
+            INSERT OR IGNORE INTO tasks (id, team_id, prd_id, title, description, status, role_category, story_points, priority, assignee_id, assignee_name, sprint_number, dependency_task_id, dependency_task_title, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        foreach ($starterTasks as $st) {
+            $stmtTask->execute($st);
+        }
+    }
 }
 
 function seedLmsModulesOnly($pdo) {

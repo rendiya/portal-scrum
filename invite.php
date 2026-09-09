@@ -1,9 +1,7 @@
 <?php
 // invite.php - Siswa set password via unique invite token link
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
+require_once __DIR__ . "/includes/auth.php";
+initAuthSession();
 require_once __DIR__ . "/includes/db.php";
 require_once __DIR__ . "/includes/whatsapp.php";
 
@@ -46,12 +44,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $member) {
             $_SESSION["scrumvibe_user_name"] = $member["name"];
 
             if ($isGuru) {
-                $_SESSION["scrumvibe_team_id"] = $member["team_id"] ?: 'team-1';
+                $teamId = $member["team_id"] ?: 'team-1';
+                $_SESSION["scrumvibe_team_id"] = $teamId;
                 unset($_SESSION["scrumvibe_student_id"]);
+                issueAuthCookie($member["id"], $member["name"], 'guru', $teamId, null);
                 header("Location: index.php");
             } else {
+                $teamId = $member["team_id"] ?: "";
                 $_SESSION["scrumvibe_student_id"] = $member["id"];
-                $_SESSION["scrumvibe_team_id"] = $member["team_id"] ?: "";
+                $_SESSION["scrumvibe_team_id"] = $teamId;
+                issueAuthCookie($member["id"], $member["name"], 'siswa', $teamId, $member["id"]);
                 header("Location: board.php");
             }
             exit;

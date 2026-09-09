@@ -1,8 +1,7 @@
 <?php
 // includes/header.php - Clean corporate header with VINIX7 Branding (Royal Blue & Yellow), Role Switcher, and Nav
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/auth.php';
+initAuthSession();
 
 $currentPage = basename($_SERVER['PHP_SELF']);
 

@@ -49,6 +49,22 @@ function initDragAndDrop() {
 
 // 2. Update Task Status via AJAX
 async function updateTaskStatus(taskId, targetStatus) {
+    // Save to local cache immediately so client never loses state
+    try {
+        const teamId = window.currentTeamId || 'team-1';
+        const key = 'scrumvibe_tasks_' + teamId;
+        const cachedRaw = localStorage.getItem(key);
+        if (cachedRaw) {
+            const list = JSON.parse(cachedRaw);
+            const t = list.find(item => item.id === taskId);
+            if (t) {
+                t.status = targetStatus;
+                t.updated_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                localStorage.setItem(key, JSON.stringify(list));
+            }
+        }
+    } catch(e) {}
+
     try {
         const res = await fetch('api.php?action=update_task_status', {
             method: 'POST',
@@ -88,6 +104,23 @@ function switchTeam(teamId) {
 
 // 5. Claim / Self-Assign Task by Student
 async function claimTask(taskId, studentId, studentName) {
+    // Save to local cache immediately
+    try {
+        const teamId = window.currentTeamId || 'team-1';
+        const key = 'scrumvibe_tasks_' + teamId;
+        const cachedRaw = localStorage.getItem(key);
+        if (cachedRaw) {
+            const list = JSON.parse(cachedRaw);
+            const t = list.find(item => item.id === taskId);
+            if (t) {
+                t.assignee_id = studentId || null;
+                t.assignee_name = studentName || null;
+                t.updated_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                localStorage.setItem(key, JSON.stringify(list));
+            }
+        }
+    } catch(e) {}
+
     try {
         const res = await fetch('api.php?action=claim_task', {
             method: 'POST',

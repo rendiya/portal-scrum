@@ -114,6 +114,10 @@ $activePrd = $stmtPrd->fetch();
                 </div>
             </div>
 
+            <button type="button" onclick="openBackupModal()" class="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-black border border-slate-300 font-bold text-xs shadow-2xs transition" title="Cadangkan atau Pulihkan Tiket Papan Kanban">
+                <span>Backup Data</span>
+            </button>
+
             <button type="button" onclick="openCreateTaskModal()" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#043399] hover:bg-[#021f5c] text-white font-bold text-xs shadow-sm transition active:scale-98">
                 <span>+ Tambah Tiket</span>
             </button>
@@ -583,6 +587,64 @@ $activePrd = $stmtPrd->fetch();
     </div>
 </div>
 
+<!-- Modal Backup & Pulihkan Data Kanban (Solusi Serverless Vercel) -->
+<div id="backupModal" class="fixed inset-0 z-50 bg-black/60 hidden items-center justify-center p-4" style="display: none;">
+    <div class="bg-white w-full max-w-lg rounded-2xl border-2 border-slate-300 shadow-2xl overflow-hidden p-6 space-y-4" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div>
+                <span class="text-[10px] font-black text-[#043399] uppercase tracking-wider block">Ketahanan Data Cloud & Lokal</span>
+                <h3 class="text-sm font-black text-black">Cadangkan & Pulihkan Tiket Papan</h3>
+            </div>
+            <button type="button" onclick="closeBackupModal()" class="text-slate-500 hover:text-black text-xl font-black px-2 leading-none" title="Tutup Modal">&times;</button>
+        </div>
+
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 leading-relaxed font-medium">
+            💡 <b>Perlindungan Otomatis Aktif:</b> Setiap perubahan tiket di Kanban Board otomatis disimpan ke memori browser (Local Cache). Jika container serverless Vercel melakukan restart, data Anda dapat dipulihkan secara otomatis.
+        </div>
+
+        <div class="space-y-3">
+            <!-- 1. Download Backup JSON -->
+            <div class="p-3.5 border-2 border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-slate-300 transition">
+                <div>
+                    <h4 class="text-xs font-black text-black">Unduh File Cadangan (JSON)</h4>
+                    <p class="text-[11px] text-slate-600 mt-0.5">Simpan semua kartu tiket kelompok saat ini ke file di komputer Anda.</p>
+                </div>
+                <button type="button" onclick="exportTasksJSON()" class="px-3.5 py-2 bg-[#043399] hover:bg-[#021f5c] text-white text-xs font-bold rounded-lg shrink-0 shadow-xs transition">
+                    Unduh JSON
+                </button>
+            </div>
+
+            <!-- 2. Restore from JSON -->
+            <div class="p-3.5 border-2 border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-slate-300 transition">
+                <div>
+                    <h4 class="text-xs font-black text-black">Pulihkan dari File JSON</h4>
+                    <p class="text-[11px] text-slate-600 mt-0.5">Unggah file cadangan JSON untuk memulihkan seluruh tiket ke papan.</p>
+                </div>
+                <label class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg shrink-0 shadow-xs transition cursor-pointer">
+                    Pilih File
+                    <input type="file" accept=".json" onchange="importTasksJSON(event)" class="hidden">
+                </label>
+            </div>
+
+            <!-- 3. Manual Sync from LocalStorage -->
+            <div class="p-3.5 border-2 border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-slate-300 transition">
+                <div>
+                    <h4 class="text-xs font-black text-black">Sinkronkan Cache Browser ke Server</h4>
+                    <p class="text-[11px] text-slate-600 mt-0.5">Kirim ulang data tiket yang tersimpan di browser Anda ke database server.</p>
+                </div>
+                <button type="button" onclick="manualSyncCache()" class="px-3.5 py-2 bg-slate-800 hover:bg-black text-white text-xs font-bold rounded-lg shrink-0 shadow-xs transition">
+                    Sinkronkan
+                </button>
+            </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
+            <span id="backupCacheCount" class="text-[11px] font-bold text-slate-500">Memeriksa cache...</span>
+            <button type="button" onclick="closeBackupModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-black rounded-lg text-xs font-bold transition">Tutup</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Global state passed from PHP
 window.tasksData = <?= json_encode($tasks, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
@@ -590,6 +652,37 @@ window.teamMembers = <?= json_encode($teamMembers, JSON_HEX_TAG | JSON_HEX_APOS 
 window.columnsDef = <?= json_encode($columns, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 window.currentStudent = <?= json_encode($currentStudent, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 window.currentRole = '<?= htmlspecialchars($currentRole) ?>';
+window.currentTeamId = '<?= htmlspecialchars($currentTeamId) ?>';
+
+// --- Client-Side Persistent Cache & Auto-Sync for Serverless Environment ---
+const taskStorageKey = 'scrumvibe_tasks_' + (window.currentTeamId || 'team-1');
+
+// 1. If server returned tasks, update localStorage cache
+if (window.tasksData && window.tasksData.length > 0) {
+    try {
+        localStorage.setItem(taskStorageKey, JSON.stringify(window.tasksData));
+    } catch(e) {}
+} else {
+    // 2. If server has 0 tasks, check if browser has cached tasks from previous session!
+    try {
+        const cachedRaw = localStorage.getItem(taskStorageKey);
+        if (cachedRaw) {
+            const cachedList = JSON.parse(cachedRaw);
+            if (Array.isArray(cachedList) && cachedList.length > 0) {
+                console.log('Restoring ' + cachedList.length + ' tasks to serverless instance...');
+                fetch('api.php?action=sync_tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ team_id: window.currentTeamId, tasks: cachedList })
+                }).then(r => r.json()).then(res => {
+                    if (res.success) {
+                        window.location.reload();
+                    }
+                }).catch(e => console.error('Sync error:', e));
+            }
+        }
+    } catch(e) {}
+}
 
 let currentDetailTaskId = null;
 
@@ -801,6 +894,19 @@ async function handleUpdateTask(e) {
     const selectedDepOpt = depSelect.options[depSelect.selectedIndex];
     data.dependency_task_title = selectedDepOpt ? selectedDepOpt.dataset.title || '' : '';
 
+    // Optimistically update localStorage
+    try {
+        const cachedRaw = localStorage.getItem(taskStorageKey);
+        if (cachedRaw) {
+            const list = JSON.parse(cachedRaw);
+            const idx = list.findIndex(item => item.id === data.id);
+            if (idx !== -1) {
+                list[idx] = { ...list[idx], ...data, updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ') };
+                localStorage.setItem(taskStorageKey, JSON.stringify(list));
+            }
+        }
+    } catch(err) {}
+
     try {
         const res = await fetch('api.php?action=update_task', {
             method: 'POST',
@@ -827,6 +933,15 @@ async function handleDeleteFromDetail() {
         confirmColor: 'red'
     });
     if (!ok) return;
+
+    // Optimistically remove from localStorage
+    try {
+        const cachedRaw = localStorage.getItem(taskStorageKey);
+        if (cachedRaw) {
+            const list = JSON.parse(cachedRaw).filter(item => item.id !== currentDetailTaskId);
+            localStorage.setItem(taskStorageKey, JSON.stringify(list));
+        }
+    } catch(err) {}
 
     try {
         const res = await fetch('api.php?action=delete_task', {
@@ -870,11 +985,140 @@ async function handleCreateTask(e) {
         });
         const result = await res.json();
         if (result.success) {
+            // Save newly created task to localStorage immediately
+            try {
+                const newTask = {
+                    id: result.id,
+                    team_id: data.team_id || window.currentTeamId || 'team-1',
+                    prd_id: data.prd_id || null,
+                    title: data.title || 'Tugas Baru',
+                    description: data.description || '',
+                    status: data.status || 'sprint_backlog',
+                    role_category: data.role_category || 'frontend',
+                    story_points: parseInt(data.story_points || 3),
+                    priority: data.priority || 'medium',
+                    assignee_id: data.assignee_id || null,
+                    assignee_name: data.assignee_name || null,
+                    sprint_number: parseInt(data.sprint_number || 1),
+                    dependency_task_id: data.dependency_task_id || null,
+                    dependency_task_title: data.dependency_task_title || null,
+                    created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+                    updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+                };
+                const cachedRaw = localStorage.getItem(taskStorageKey);
+                const list = cachedRaw ? JSON.parse(cachedRaw) : [];
+                list.push(newTask);
+                localStorage.setItem(taskStorageKey, JSON.stringify(list));
+            } catch(e) {}
+
             window.location.reload();
         } else {
             await showAppAlert(result.error || 'Gagal menyimpan tugas');
         }
     } catch (err) {
+        await showAppAlert('Error: ' + err.message);
+    }
+}
+
+// 7. Backup & Restore Functions (Serverless Resiliency)
+function openBackupModal() {
+    const modal = document.getElementById('backupModal');
+    if (!modal) return;
+    const cachedRaw = localStorage.getItem(taskStorageKey);
+    const count = cachedRaw ? (JSON.parse(cachedRaw).length || 0) : 0;
+    const label = document.getElementById('backupCacheCount');
+    if (label) {
+        label.innerText = `Tersimpan di Browser: ${count} Tiket (Kelompok ini)`;
+    }
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeBackupModal() {
+    const modal = document.getElementById('backupModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function exportTasksJSON() {
+    const cachedRaw = localStorage.getItem(taskStorageKey);
+    const tasksToExport = (window.tasksData && window.tasksData.length > 0) 
+        ? window.tasksData 
+        : (cachedRaw ? JSON.parse(cachedRaw) : []);
+    
+    if (tasksToExport.length === 0) {
+        showAppAlert('Tidak ada tiket tugas untuk diunduh.');
+        return;
+    }
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tasksToExport, null, 2));
+    const dlAnchor = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    dlAnchor.setAttribute("href", dataStr);
+    dlAnchor.setAttribute("download", `scrumvibe_kanban_${window.currentTeamId || 'team'}_${dateStr}.json`);
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    dlAnchor.remove();
+}
+
+function importTasksJSON(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        try {
+            const parsed = JSON.parse(e.target.result);
+            if (!Array.isArray(parsed)) {
+                await showAppAlert('Format file JSON tidak valid. Harus berupa daftar array tiket.');
+                return;
+            }
+
+            // Save to localStorage immediately
+            localStorage.setItem(taskStorageKey, JSON.stringify(parsed));
+
+            // Sync to server
+            const res = await fetch('api.php?action=sync_tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ team_id: window.currentTeamId, tasks: parsed })
+            });
+            const result = await res.json();
+            if (result.success) {
+                await showAppAlert(`Berhasil memulihkan ${parsed.length} tiket ke papan Kanban!`);
+                window.location.reload();
+            } else {
+                await showAppAlert(result.error || 'Gagal menyinkronkan data ke server');
+            }
+        } catch(err) {
+            await showAppAlert('Gagal membaca file JSON: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+async function manualSyncCache() {
+    const cachedRaw = localStorage.getItem(taskStorageKey);
+    if (!cachedRaw) {
+        await showAppAlert('Tidak ada cache tiket yang tersimpan di browser.');
+        return;
+    }
+    try {
+        const tasks = JSON.parse(cachedRaw);
+        const res = await fetch('api.php?action=sync_tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ team_id: window.currentTeamId, tasks: tasks })
+        });
+        const result = await res.json();
+        if (result.success) {
+            await showAppAlert(`Berhasil menyinkronkan ${tasks.length} tiket ke server!`);
+            window.location.reload();
+        } else {
+            await showAppAlert(result.error || 'Gagal sinkronisasi');
+        }
+    } catch(err) {
         await showAppAlert('Error: ' + err.message);
     }
 }

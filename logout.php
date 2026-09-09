@@ -1,10 +1,13 @@
 <?php
 // logout.php - Sesi Keluar dan Pengalihan ke Halaman Login
+require_once __DIR__ . '/includes/auth.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 $_SESSION = [];
+clearAuthCookie();
 
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();

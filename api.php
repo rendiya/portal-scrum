@@ -4,6 +4,9 @@ ini_set('display_errors', '0');
 error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/includes/auth.php';
+initAuthSession();
+
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/whatsapp.php';
 
@@ -126,6 +129,53 @@ try {
                 echo json_encode(['success' => false, 'error' => 'Tugas tidak ditemukan']);
             }
             break;
+
+        // 2e. Sync Tasks (from client localStorage or external backup)
+        case 'sync_tasks':
+            $teamId = $input['team_id'] ?? ($_SESSION['scrumvibe_team_id'] ?? '');
+            $tasksList = $input['tasks'] ?? [];
+            if (!empty($tasksList) && is_array($tasksList)) {
+                $stmt = $pdo->prepare("
+                    INSERT OR REPLACE INTO tasks (id, team_id, prd_id, title, description, status, role_category, story_points, priority, assignee_id, assignee_name, sprint_number, dependency_task_id, dependency_task_title, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $now = date('Y-m-d H:i:s');
+                $count = 0;
+                foreach ($tasksList as $t) {
+                    if (empty($t['id']) || empty($t['title'])) continue;
+                    $stmt->execute([
+                        $t['id'],
+                        !empty($t['team_id']) ? $t['team_id'] : ($teamId ?: 'team-1'),
+                        $t['prd_id'] ?? null,
+                        $t['title'],
+                        $t['description'] ?? '',
+                        $t['status'] ?? 'sprint_backlog',
+                        $t['role_category'] ?? 'frontend',
+                        (int)($t['story_points'] ?? 1),
+                        $t['priority'] ?? 'medium',
+                        !empty($t['assignee_id']) ? $t['assignee_id'] : null,
+                        !empty($t['assignee_name']) ? $t['assignee_name'] : null,
+                        (int)($t['sprint_number'] ?? 1),
+                        !empty($t['dependency_task_id']) ? $t['dependency_task_id'] : null,
+                        !empty($t['dependency_task_title']) ? $t['dependency_task_title'] : null,
+                        $t['created_at'] ?? $now,
+                        $t['updated_at'] ?? $now
+                    ]);
+                    $count++;
+                }
+                echo json_encode(['success' => true, 'message' => 'Tugas berhasil disinkronkan', 'count' => $count]);
+                exit;
+            }
+            echo json_encode(['success' => false, 'error' => 'Data tugas tidak valid atau kosong']);
+            exit;
+
+        // 2f. Get all tasks for team (JSON)
+        case 'get_tasks':
+            $teamId = $input['team_id'] ?? $_GET['team_id'] ?? ($_SESSION['scrumvibe_team_id'] ?? '');
+            $stmt = $pdo->prepare("SELECT * FROM tasks WHERE team_id = ? ORDER BY priority DESC, created_at ASC");
+            $stmt->execute([$teamId]);
+            echo json_encode(['success' => true, 'tasks' => $stmt->fetchAll()]);
+            exit;
 
         // 3. Delete Task
         case 'delete_task':
