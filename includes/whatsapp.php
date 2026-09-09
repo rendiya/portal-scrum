@@ -74,6 +74,12 @@ function sendViaWaGateway($pdo, $phone, $message) {
             return ['success' => true, 'message' => 'Pesan berhasil dikirim via WhatsApp Gateway (Fonnte)!'];
         } else {
             $reason = $resJson['reason'] ?? $resJson['detail'] ?? $resJson['message'] ?? $response;
+            if (stripos($reason, 'disconnected device') !== false) {
+                return [
+                    'success' => false,
+                    'message' => 'Device WhatsApp di dashboard Fonnte berstatus "Disconnected" (belum scan QR code atau sesi terputus). Silakan buka fonnte.com untuk scan QR nomor pengirim, atau gunakan tombol hijau "Buka WA Web / App (wa.me)" untuk kirim langsung.'
+                ];
+            }
             return ['success' => false, 'message' => 'Gateway menolak: ' . $reason];
         }
     }
