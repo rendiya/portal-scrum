@@ -42,20 +42,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($identifier)) {
             $errorMsg = 'Silakan masukkan email, nomor WhatsApp, atau nama akun Anda.';
         } else {
-            // Cari akun berdasarkan email, phone, token, atau nama
-            $stmt = $pdo->prepare("
-                SELECT * FROM members 
-                WHERE LOWER(email) = LOWER(?) OR phone = ? OR token = ? OR LOWER(name) = LOWER(?)
-                LIMIT 1
-            ");
-            $stmt->execute([$identifier, $identifier, $identifier, $identifier]);
-            $user = $stmt->fetch();
+            // 1. Cek variasi nomor WhatsApp jika input berupa angka
+            $rawDigits = preg_replace('/[^0-9]/', '', $identifier);
+            $phoneVariants = [];
+            if (!empty($rawDigits) && strlen($rawDigits) >= 5) {
+                $phoneVariants[] = $rawDigits;
+                if (str_starts_with($rawDigits, '08')) {
+                    $phoneVariants[] = '628' . substr($rawDigits, 2);
+                    $phoneVariants[] = substr($rawDigits, 1);
+                } elseif (str_starts_with($rawDigits, '628')) {
+                    $phoneVariants[] = '08' . substr($rawDigits, 3);
+                    $phoneVariants[] = substr($rawDigits, 2);
+                } elseif (str_starts_with($rawDigits, '8')) {
+                    $phoneVariants[] = '08' . $rawDigits;
+                    $phoneVariants[] = '628' . $rawDigits;
+                }
+            }
+
+            // 2. Query berdasarkan email, phone variants, token, atau nama
+            $user = null;
+            if (!empty($phoneVariants)) {
+                $phPlaceholders = implode(',', array_fill(0, count($phoneVariants), '?'));
+                $stmt = $pdo->prepare("SELECT * FROM members WHERE phone IN ($phPlaceholders) LIMIT 1");
+                $stmt->execute($phoneVariants);
+                $user = $stmt->fetch();
+            }
 
             if (!$user) {
-                // Fallback pencarian fuzzy LIKE nama
-                $stmt = $pdo->prepare("SELECT * FROM members WHERE LOWER(name) LIKE LOWER(?) LIMIT 1");
-                $stmt->execute(["%$identifier%"]);
+                $stmt = $pdo->prepare("
+                    SELECT * FROM members 
+                    WHERE LOWER(email) = LOWER(?) OR token = ? OR LOWER(name) = LOWER(?)
+                    LIMIT 1
+                ");
+                $stmt->execute([$identifier, $identifier, $identifier]);
                 $user = $stmt->fetch();
+            }
+
+            // 3. Fallback jika user mengetik 'admin', 'guru', atau potongan nama
+            if (!$user) {
+                $lowerId = strtolower($identifier);
+                if (in_array($lowerId, ['admin', 'guru', 'superadmin', 'super_admin', 'instruktur'])) {
+                    $stmt = $pdo->query("SELECT * FROM members WHERE role = 'guru' OR role = 'super_admin' ORDER BY id ASC LIMIT 1");
+                    $user = $stmt->fetch();
+                } else {
+                    $stmt = $pdo->prepare("SELECT * FROM members WHERE LOWER(name) LIKE LOWER(?) LIMIT 1");
+                    $stmt->execute(["%$identifier%"]);
+                    $user = $stmt->fetch();
+                }
             }
 
             if ($user) {
