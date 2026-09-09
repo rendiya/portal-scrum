@@ -22,7 +22,9 @@ try {
                 'drivers' => PDO::getAvailableDrivers(),
                 'php_version' => PHP_VERSION,
                 'vercel' => !empty(getenv('VERCEL')),
-                'has_postgres_url' => !empty(getenv('POSTGRES_URL') ?: getenv('DATABASE_URL')),
+                'db_driver' => $dbDriver,
+                'db_source' => $dbSource,
+                'has_postgres_url' => !empty(getDbEnv('POSTGRES_URL') ?: getDbEnv('DATABASE_URL') ?: getDbEnv('POSTGRES_PRISMA_URL') ?: getDbEnv('POSTGRES_URL_NON_POOLING')),
             ]);
             exit;
 
