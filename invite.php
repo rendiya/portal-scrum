@@ -12,7 +12,7 @@ $error = "";
 $member = null;
 
 if ($token) {
-    $stmt = $pdo->prepare("SELECT m.*, t.name as team_name FROM members m LEFT JOIN teams t ON m.team_id = t.id WHERE m.token = ? AND (m.role = \"siswa\" OR (m.role != \"guru\" AND m.role != \"super_admin\")) LIMIT 1");
+    $stmt = $pdo->prepare("SELECT m.*, t.name as team_name FROM members m LEFT JOIN teams t ON m.team_id = t.id WHERE m.token = ? LIMIT 1");
     $stmt->execute([$token]);
     $member = $stmt->fetch();
 }
@@ -39,14 +39,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $member) {
             $upd = $pdo->prepare("UPDATE members SET email = ?, password_hash = ?, invite_used = 1 WHERE token = ?");
             $upd->execute([$email, $hash, $token]);
 
+            $isGuru = ($member["role"] === 'guru' || $member["role"] === 'super_admin');
             $_SESSION["scrumvibe_logged_in"] = true;
-            $_SESSION["scrumvibe_role"] = "siswa";
+            $_SESSION["scrumvibe_role"] = $isGuru ? 'guru' : 'siswa';
             $_SESSION["scrumvibe_user_id"] = $member["id"];
             $_SESSION["scrumvibe_user_name"] = $member["name"];
-            $_SESSION["scrumvibe_student_id"] = $member["id"];
-            $_SESSION["scrumvibe_team_id"] = $member["team_id"] ?: "";
 
-            header("Location: board.php");
+            if ($isGuru) {
+                $_SESSION["scrumvibe_team_id"] = $member["team_id"] ?: 'team-1';
+                unset($_SESSION["scrumvibe_student_id"]);
+                header("Location: index.php");
+            } else {
+                $_SESSION["scrumvibe_student_id"] = $member["id"];
+                $_SESSION["scrumvibe_team_id"] = $member["team_id"] ?: "";
+                header("Location: board.php");
+            }
             exit;
         }
     }
@@ -90,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $member) {
     <?php else: ?>
     <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
         <div class="bg-[#043399] text-white px-6 py-5">
-            <h2 class="text-base font-black">Atur Kata Sandi Akun Siswa</h2>
+            <h2 class="text-base font-black">Atur Kata Sandi Akun <?= ($member['role'] === 'guru' || $member['role'] === 'super_admin') ? 'Guru / Instruktur' : 'Siswa' ?></h2>
             <p class="text-xs text-blue-200 mt-1">
                 Halo, <strong class="text-white"><?= htmlspecialchars($member["name"]) ?></strong>
                 <?php if (!empty($member["team_name"])): ?>
