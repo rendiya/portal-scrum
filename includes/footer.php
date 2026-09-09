@@ -172,7 +172,7 @@
 
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-700 font-medium">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
             <div class="flex items-center gap-2">
                 <span class="font-black text-[#043399]">VINIX<span class="text-[#f59e0b]">7</span></span>
                 <span class="text-slate-600">• PT VINIX SEVEN AURUM</span>
