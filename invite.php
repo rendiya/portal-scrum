@@ -18,27 +18,37 @@ if ($token) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && $member) {
+    $email = trim($_POST["email"] ?? "");
     $pass1 = $_POST["password"] ?? "";
     $pass2 = $_POST["password_confirm"] ?? "";
 
-    if (strlen($pass1) < 6) {
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Format alamat email tidak valid.";
+    } elseif (strlen($pass1) < 6) {
         $error = "Kata sandi minimal 6 karakter.";
     } elseif ($pass1 !== $pass2) {
         $error = "Konfirmasi kata sandi tidak cocok.";
     } else {
-        $hash = password_hash($pass1, PASSWORD_DEFAULT);
-        $upd = $pdo->prepare("UPDATE members SET password_hash = ?, invite_used = 1 WHERE token = ?");
-        $upd->execute([$hash, $token]);
+        // Check if email is already taken by another member
+        $chk = $pdo->prepare("SELECT id FROM members WHERE LOWER(email) = LOWER(?) AND id != ? LIMIT 1");
+        $chk->execute([$email, $member["id"]]);
+        if ($chk->fetch()) {
+            $error = "Alamat email tersebut sudah digunakan oleh akun lain.";
+        } else {
+            $hash = password_hash($pass1, PASSWORD_DEFAULT);
+            $upd = $pdo->prepare("UPDATE members SET email = ?, password_hash = ?, invite_used = 1 WHERE token = ?");
+            $upd->execute([$email, $hash, $token]);
 
-        $_SESSION["scrumvibe_logged_in"] = true;
-        $_SESSION["scrumvibe_role"] = "siswa";
-        $_SESSION["scrumvibe_user_id"] = $member["id"];
-        $_SESSION["scrumvibe_user_name"] = $member["name"];
-        $_SESSION["scrumvibe_student_id"] = $member["id"];
-        $_SESSION["scrumvibe_team_id"] = $member["team_id"] ?: "";
+            $_SESSION["scrumvibe_logged_in"] = true;
+            $_SESSION["scrumvibe_role"] = "siswa";
+            $_SESSION["scrumvibe_user_id"] = $member["id"];
+            $_SESSION["scrumvibe_user_name"] = $member["name"];
+            $_SESSION["scrumvibe_student_id"] = $member["id"];
+            $_SESSION["scrumvibe_team_id"] = $member["team_id"] ?: "";
 
-        header("Location: board.php");
-        exit;
+            header("Location: board.php");
+            exit;
+        }
     }
 }
 ?>
@@ -93,7 +103,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $member) {
             <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm font-semibold"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <p class="text-xs text-slate-500">Buat kata sandi untuk masuk ke aplikasi. Minimal 6 karakter.</p>
+            <p class="text-xs text-slate-500">Lengkapi alamat email dan buat kata sandi untuk aktivasi akun Anda.</p>
 
             <form method="POST" class="space-y-4">
                 <div>
@@ -101,14 +111,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $member) {
                     <input type="text" value="<?= htmlspecialchars($member["name"]) ?>" disabled class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 text-slate-500 font-semibold cursor-not-allowed">
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Alamat Email Aktif *</label>
+                    <input type="email" name="email" required placeholder="nama@email.com" value="<?= htmlspecialchars($_POST['email'] ?? ($member['email'] ?? '')) ?>" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                    <span class="text-[10px] text-slate-400 mt-0.5 block">Digunakan untuk login ke sistem</span>
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Buat Kata Sandi *</label>
-                    <input type="password" name="password" required minlength="6" autofocus placeholder="Minimal 6 karakter" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                    <input type="password" name="password" required minlength="6" placeholder="Minimal 6 karakter" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#043399]">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Konfirmasi Kata Sandi *</label>
                     <input type="password" name="password_confirm" required minlength="6" placeholder="Ulangi kata sandi" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#043399]">
                 </div>
-                <button type="submit" class="w-full py-3 bg-[#043399] hover:bg-[#021f5c] text-white font-bold text-sm rounded-xl transition">Simpan Kata Sandi dan Masuk</button>
+                <button type="submit" class="w-full py-3 bg-[#043399] hover:bg-[#021f5c] text-white font-black text-sm rounded-xl shadow-md transition active:scale-98">Aktivasi Akun & Masuk Sekarang &rarr;</button>
             </form>
             <p class="text-center text-xs text-slate-400">Sudah punya kata sandi? <a href="login.php" class="text-[#043399] font-bold hover:underline">Masuk di sini</a></p>
         </div>
