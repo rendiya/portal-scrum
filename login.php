@@ -61,6 +61,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if ($selectedGuru) {
+                $password = $_POST['password'] ?? '';
+                if (!empty($selectedGuru['password_hash'])) {
+                    if (empty($password) || !password_verify($password, $selectedGuru['password_hash'])) {
+                        $errorMsg = 'Kata sandi salah. Silakan coba lagi.';
+                        $selectedGuru = null;
+                    }
+                }
+            }
+
+            if ($selectedGuru) {
                 $_SESSION['scrumvibe_logged_in'] = true;
                 $_SESSION['scrumvibe_role'] = 'guru';
                 $_SESSION['scrumvibe_user_id'] = $selectedGuru['id'];
@@ -70,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 header('Location: index.php');
                 exit;
-            } else {
+            } elseif (empty($errorMsg)) {
                 $errorMsg = 'Akun Guru tidak ditemukan. Pastikan email atau nama yang dimasukkan sudah terdaftar.';
             }
         }

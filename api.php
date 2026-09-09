@@ -578,7 +578,7 @@ try {
             echo json_encode(['success' => true, 'message' => 'Modul materi berhasil dihapus']);
             break;
 
-        // 15. Edit Account Profile
+        // 15. Edit Account Profile & Password
         case 'edit_account':
             if (session_status() === PHP_SESSION_NONE) session_start();
             $userId = $_SESSION['scrumvibe_user_id'] ?? null;
@@ -591,10 +591,45 @@ try {
             $phone = trim($input['phone'] ?? '');
             $university = trim($input['university'] ?? '');
             $major = trim($input['major'] ?? '');
+            $currentPassword = $input['current_password'] ?? '';
+            $newPassword = $input['new_password'] ?? '';
+            $confirmPassword = $input['confirm_password'] ?? '';
 
             if (empty($name)) {
                 echo json_encode(['success' => false, 'error' => 'Nama lengkap tidak boleh kosong']);
                 exit;
+            }
+
+            // Fetch member
+            $stmt = $pdo->prepare("SELECT * FROM members WHERE id = ? LIMIT 1");
+            $stmt->execute([$userId]);
+            $member = $stmt->fetch();
+            if (!$member) {
+                echo json_encode(['success' => false, 'error' => 'Data akun tidak ditemukan']);
+                exit;
+            }
+
+            $passwordUpdated = false;
+            if (!empty($newPassword)) {
+                if (strlen($newPassword) < 6) {
+                    echo json_encode(['success' => false, 'error' => 'Kata sandi baru minimal harus 6 karakter']);
+                    exit;
+                }
+                if ($newPassword !== $confirmPassword) {
+                    echo json_encode(['success' => false, 'error' => 'Konfirmasi kata sandi baru tidak cocok']);
+                    exit;
+                }
+                if (!empty($member['password_hash'])) {
+                    if (empty($currentPassword) || !password_verify($currentPassword, $member['password_hash'])) {
+                        echo json_encode(['success' => false, 'error' => 'Kata sandi saat ini (lama) salah']);
+                        exit;
+                    }
+                }
+
+                $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+                $stmtPass = $pdo->prepare("UPDATE members SET password_hash = ? WHERE id = ?");
+                $stmtPass->execute([$newHash, $userId]);
+                $passwordUpdated = true;
             }
 
             $stmt = $pdo->prepare("UPDATE members SET name = ?, email = ?, phone = ?, university = ?, major = ? WHERE id = ?");
@@ -602,7 +637,10 @@ try {
 
             $_SESSION['scrumvibe_user_name'] = $name;
 
-            echo json_encode(['success' => true, 'message' => 'Profil akun berhasil diperbarui!']);
+            $message = $passwordUpdated 
+                ? 'Profil dan kata sandi berhasil diperbarui!' 
+                : 'Profil akun berhasil diperbarui!';
+            echo json_encode(['success' => true, 'message' => $message]);
             break;
 
         // Reset Invite Link - Admin resets student's password setup link

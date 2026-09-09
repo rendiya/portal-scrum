@@ -127,6 +127,36 @@
                         </div>
                     </div>
 
+                    <!-- Ubah Password Section -->
+                    <div class="pt-3 border-t-2 border-slate-100 space-y-3 bg-slate-50/70 p-3 rounded-xl border border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-black text-[#043399] flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                Ubah Kata Sandi (Password)
+                            </span>
+                            <span class="text-[10px] text-slate-500 font-medium">Opsional</span>
+                        </div>
+
+                        <?php if (!empty($currentMember['password_hash'])): ?>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-800 mb-1">Kata Sandi Saat Ini (Lama) *</label>
+                            <input type="password" name="current_password" id="accountModalCurrentPass" placeholder="Masukkan kata sandi lama Anda" class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                        </div>
+                        <?php endif; ?>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-800 mb-1">Kata Sandi Baru</label>
+                                <input type="password" name="new_password" id="accountModalNewPass" minlength="6" placeholder="Min. 6 karakter" class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-800 mb-1">Ulangi Kata Sandi</label>
+                                <input type="password" name="confirm_password" id="accountModalConfirmPass" minlength="6" placeholder="Ketik ulang kata sandi" class="w-full px-3 py-2 border-2 border-slate-300 rounded-lg text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                            </div>
+                        </div>
+                        <p class="text-[10px] text-slate-500 leading-tight">Kosongkan kolom kata sandi di atas jika Anda hanya ingin memperbarui data profil tanpa mengganti kata sandi.</p>
+                    </div>
+
                     <div class="pt-3 border-t border-slate-200 flex justify-end gap-2">
                         <button type="button" onclick="closeEditAccountModal()" class="px-4 py-2 rounded-xl border border-slate-300 font-bold text-xs text-black hover:bg-slate-100 transition active:scale-95">
                             Batal

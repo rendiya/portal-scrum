@@ -320,6 +320,17 @@ async function handleSaveAccount(e) {
     const form = e.target;
     const data = Object.fromEntries(new FormData(form).entries());
 
+    if (data.new_password) {
+        if (data.new_password.length < 6) {
+            await showAppAlert('Kata sandi baru minimal harus 6 karakter.');
+            return;
+        }
+        if (data.new_password !== data.confirm_password) {
+            await showAppAlert('Konfirmasi kata sandi baru tidak cocok. Silakan periksa kembali.');
+            return;
+        }
+    }
+
     try {
         const res = await fetch('api.php?action=edit_account', {
             method: 'POST',
@@ -329,7 +340,7 @@ async function handleSaveAccount(e) {
         const result = await res.json();
         if (result.success) {
             closeEditAccountModal();
-            await showAppAlert('Profil akun berhasil diperbarui!');
+            await showAppAlert(result.message || 'Profil akun berhasil diperbarui!');
             window.location.reload();
         } else {
             await showAppAlert(result.error || 'Gagal memperbarui akun');
