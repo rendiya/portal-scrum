@@ -165,10 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Masuk Sistem - Web Development Program Fast Track</title>
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -176,6 +172,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             theme: {
                 extend: {
                     colors: {
+                        fb: {
+                            blue: '#1877f2',
+                            hover: '#166fe5',
+                            border: '#dddfe2',
+                            bg: '#f0f2f5'
+                        },
                         navy: {
                             800: '#043399',
                             900: '#021f5c',
@@ -187,49 +189,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif']
+                        sans: [
+                            'SF Pro Display',
+                            '-apple-system',
+                            'BlinkMacSystemFont',
+                            'Segoe UI',
+                            'Roboto',
+                            'Helvetica',
+                            'Arial',
+                            'sans-serif'
+                        ]
                     }
                 }
             }
         };
     </script>
     <style>
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { 
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col justify-between text-black antialiased">
+<body class="bg-[#f0f2f5] min-h-screen flex flex-col justify-between text-[#1c1e21] antialiased">
 
     <!-- Top Corporate Accent Bar -->
-    <div class="bg-[#021f5c] text-white text-[11px] font-bold py-2 px-4 text-center tracking-wider uppercase border-b border-blue-900">
+    <div class="bg-[#021f5c] text-white text-xs py-2 px-4 text-center tracking-wide uppercase border-b border-blue-900">
         Portal Masuk • Program Fast Track PT VINIX SEVEN AURUM
     </div>
 
     <!-- Main Content Container -->
     <main class="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div class="bg-white max-w-md w-full rounded-2xl border-2 border-slate-300 shadow-xl overflow-hidden my-auto">
+        <div class="bg-white max-w-[420px] w-full rounded-lg border border-[#dddfe2] shadow-[0_2px_4px_rgba(0,0,0,0.1),0_8px_16px_rgba(0,0,0,0.1)] overflow-hidden my-auto">
             
             <!-- Brand Header -->
-            <div class="pt-8 pb-6 px-6 text-center border-b-2 border-slate-100 bg-gradient-to-b from-blue-50/40 to-white">
+            <div class="pt-8 pb-5 px-6 text-center border-b border-[#dddfe2] bg-gradient-to-b from-[#f8f9fa] to-white">
                 <?php if (file_exists(__DIR__ . '/logo/LOGO VINIX.png')): ?>
-                    <img src="logo/LOGO VINIX.png" alt="VINIX7" class="h-14 sm:h-16 w-auto mx-auto object-contain mb-3.5">
+                    <img src="logo/LOGO VINIX.png" alt="VINIX7" class="h-14 w-auto mx-auto object-contain mb-3">
                 <?php else: ?>
-                    <div class="h-12 w-28 mx-auto bg-[#043399] text-white font-black text-xl rounded-xl flex items-center justify-center mb-3">
+                    <div class="h-12 w-28 mx-auto bg-[#043399] text-white text-xl rounded-lg flex items-center justify-center mb-3">
                         VINIX<span class="text-[#f59e0b] ml-0.5">7</span>
                     </div>
                 <?php endif; ?>
                 
                 <?php if ($isForgot): ?>
-                    <h1 class="text-xl font-black text-slate-900 tracking-tight leading-none">
+                    <h1 class="text-2xl text-[#1c1e21] tracking-normal leading-tight">
                         Lupa Kata Sandi
                     </h1>
-                    <p class="text-xs text-slate-600 font-semibold mt-1.5 tracking-tight">
+                    <p class="text-sm text-[#65676b] mt-1">
                         Reset kata sandi akun Anda via WhatsApp
                     </p>
                 <?php else: ?>
-                    <h1 class="text-2xl font-black text-slate-900 tracking-tight leading-none">
+                    <h1 class="text-2xl text-[#1c1e21] tracking-normal leading-tight">
                         Web Development
                     </h1>
-                    <p class="text-xs text-slate-600 font-semibold mt-1.5 tracking-tight">
+                    <p class="text-sm text-[#65676b] mt-1">
                         Program Fast Track PT VINIX SEVEN AURUM
                     </p>
                 <?php endif; ?>
@@ -239,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- VIEW LUPA PASSWORD -->
                 <div class="p-6 pb-0 space-y-3">
                     <?php if (!empty($errorMsg)): ?>
-                        <div class="p-3.5 rounded-xl bg-red-50 border-2 border-red-200 text-red-900 text-xs font-bold leading-relaxed">
+                        <div class="p-3.5 rounded-md bg-red-50 border border-red-200 text-red-900 text-sm leading-relaxed">
                             <?= htmlspecialchars($errorMsg) ?>
                         </div>
                     <?php endif; ?>
@@ -247,32 +262,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <?php if ($forgotSuccess): ?>
                     <div class="p-6 space-y-4">
-                        <div class="p-4 rounded-xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 space-y-2">
+                        <div class="p-4 rounded-md bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-2">
                             <div class="flex items-center gap-2">
                                 <span class="text-xl">✅</span>
-                                <h4 class="font-black text-xs sm:text-sm text-emerald-900">Tautan Reset Berhasil Dibuat!</h4>
+                                <h4 class="text-base text-emerald-900">Tautan Reset Berhasil Dibuat!</h4>
                             </div>
-                            <p class="text-xs font-medium text-emerald-900 leading-relaxed">
+                            <p class="text-sm text-emerald-900 leading-relaxed">
                                 Tautan reset kata sandi telah disiapkan untuk akun <strong><?= htmlspecialchars($forgotSuccess['name']) ?></strong> (<?= htmlspecialchars($forgotSuccess['phone']) ?>).
                             </p>
                             <?php if ($forgotSuccess['gateway_sent']): ?>
-                                <p class="text-[11px] font-bold text-emerald-700 bg-emerald-100 p-2 rounded-lg">
+                                <p class="text-xs text-emerald-700 bg-emerald-100 p-2 rounded">
                                     ✓ Pesan otomatis telah dikirimkan ke WhatsApp Anda melalui Gateway!
                                 </p>
                             <?php endif; ?>
                         </div>
 
                         <div class="space-y-2.5 pt-1">
-                            <a href="<?= htmlspecialchars($forgotSuccess['wa_me_link']) ?>" target="_blank" class="w-full py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#1ebd59] text-white font-black text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2">
+                            <a href="<?= htmlspecialchars($forgotSuccess['wa_me_link']) ?>" target="_blank" class="w-full py-3.5 px-4 rounded-md bg-[#25D366] hover:bg-[#1ebd59] text-white text-base shadow-sm transition flex items-center justify-center gap-2">
                                 <span>💬 Buka WhatsApp & Kirim Pesan Reset &rarr;</span>
                             </a>
 
-                            <a href="<?= htmlspecialchars($forgotSuccess['reset_link']) ?>" class="w-full py-2.5 px-4 rounded-xl bg-[#043399] hover:bg-[#021f5c] text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2">
-                                <span>🔑 Atur Kata Sandi Sekarang (Di Browser Ini) &rarr;</span>
+                            <a href="<?= htmlspecialchars($forgotSuccess['reset_link']) ?>" class="w-full py-3 px-4 rounded-md bg-[#043399] hover:bg-[#021f5c] text-white text-sm shadow-sm transition flex items-center justify-center gap-2">
+                                <span>🔑 Atur Kata Sandi Sekarang &rarr;</span>
                             </a>
 
                             <div class="pt-2 text-center">
-                                <a href="login.php" class="text-xs text-slate-600 font-bold hover:text-black hover:underline">
+                                <a href="login.php" class="text-sm text-[#1877f2] hover:underline">
                                     &larr; Kembali ke Halaman Login
                                 </a>
                             </div>
@@ -280,7 +295,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 <?php else: ?>
                     <div class="p-6 space-y-4">
-                        <div class="p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-950 font-medium leading-relaxed">
+                        <div class="p-3.5 bg-blue-50 border border-blue-200 rounded-md text-sm text-[#021f5c] leading-relaxed">
                             Masukkan nomor WhatsApp yang terdaftar pada akun Anda (Guru maupun Siswa). Sistem akan mengirimkan tautan pembuatan kata sandi baru langsung ke WhatsApp Anda.
                         </div>
 
@@ -288,18 +303,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <input type="hidden" name="action" value="forgot_password">
 
                             <div>
-                                <label class="block text-xs font-black text-black mb-1">Nomor WhatsApp Terdaftar *</label>
-                                <input type="text" name="phone" required placeholder="Contoh: 081234567890 atau 6281234567890" value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
-                                <span class="text-[10px] text-slate-500 mt-1 block">Bisa diawali dengan 08 atau 628</span>
+                                <label class="block text-sm text-[#1c1e21] mb-1.5">Nomor WhatsApp Terdaftar</label>
+                                <input type="text" name="phone" required placeholder="Contoh: 081234567890 atau 6281234567890" value="<?= htmlspecialchars($_POST['phone'] ?? '') ?>" class="w-full px-4 py-3 border border-[#ccd0d5] rounded-md text-[16px] text-[#1c1e21] placeholder-[#8d949e] focus:outline-none focus:border-[#1877f2] focus:ring-1 focus:ring-[#1877f2]">
+                                <span class="text-xs text-[#65676b] mt-1 block">Bisa diawali dengan 08 atau 628</span>
                             </div>
 
-                            <button type="submit" class="w-full py-3 px-4 rounded-xl bg-[#043399] hover:bg-[#021f5c] text-white font-black text-xs sm:text-sm shadow-md transition active:scale-98">
+                            <button type="submit" class="w-full py-3.5 px-4 rounded-md bg-[#043399] hover:bg-[#021f5c] text-white text-[16px] transition active:scale-[0.99]">
                                 Kirim Link Reset ke WhatsApp &rarr;
                             </button>
                         </form>
 
                         <div class="pt-2 text-center">
-                            <a href="login.php" class="text-xs text-slate-600 font-bold hover:text-black hover:underline">
+                            <a href="login.php" class="text-sm text-[#1877f2] hover:underline">
                                 &larr; Kembali ke Halaman Login
                             </a>
                         </div>
@@ -310,56 +325,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <!-- Messages (Error & Success) -->
                 <div class="p-6 pb-0 space-y-3">
                     <?php if (!empty($errorMsg)): ?>
-                        <div class="p-3.5 rounded-xl bg-red-50 border-2 border-red-200 text-red-900 text-xs font-bold leading-relaxed">
+                        <div class="p-3.5 rounded-md bg-red-50 border border-red-200 text-red-900 text-sm leading-relaxed">
                             <?= htmlspecialchars($errorMsg) ?>
                         </div>
                     <?php endif; ?>
 
                     <?php if (!empty($successMsg)): ?>
-                        <div class="p-3.5 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-emerald-900 text-xs font-bold leading-relaxed">
+                        <div class="p-3.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900 text-sm leading-relaxed">
                             <?= htmlspecialchars($successMsg) ?>
                         </div>
                     <?php endif; ?>
                 </div>
 
-                <!-- SINGLE UNIFIED LOGIN FORM -->
-                <div class="p-6 pt-4 space-y-5">
+                <!-- SINGLE UNIFIED LOGIN FORM ALA FACEBOOK -->
+                <div class="p-6 pt-5 space-y-4">
                     <form id="loginForm" method="POST" action="login.php" class="space-y-4">
                         <input type="hidden" name="action" value="login">
 
                         <div>
-                            <label class="block text-xs font-black text-black mb-1">Email, No. WhatsApp, atau Nama Akun *</label>
-                            <input type="text" id="identifier" name="identifier" required placeholder="Masukkan email, WhatsApp, atau nama" value="<?= !empty($_POST['identifier']) ? htmlspecialchars($_POST['identifier']) : '' ?>" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-bold text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                            <label class="block text-sm text-[#1c1e21] mb-1.5">Email, No. WhatsApp, atau Nama Akun</label>
+                            <input type="text" id="identifier" name="identifier" required placeholder="Masukkan email, nomor telepon, atau nama" value="<?= !empty($_POST['identifier']) ? htmlspecialchars($_POST['identifier']) : '' ?>" class="w-full px-4 py-3.5 border border-[#ccd0d5] rounded-md text-[16px] text-[#1c1e21] placeholder-[#8d949e] focus:outline-none focus:border-[#1877f2] focus:ring-1 focus:ring-[#1877f2]">
                         </div>
 
                         <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="block text-xs font-black text-black">Kata Sandi / Password</label>
-                                <a href="login.php?forgot=1" class="text-[11px] text-[#043399] font-bold hover:underline">Lupa kata sandi?</a>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-sm text-[#1c1e21]">Kata Sandi</label>
+                                <a href="login.php?forgot=1" class="text-sm text-[#1877f2] hover:underline">Lupa kata sandi?</a>
                             </div>
-                            <input type="password" id="password" name="password" placeholder="Masukkan kata sandi akun Anda" class="w-full px-3.5 py-2.5 border-2 border-slate-300 rounded-xl text-xs font-mono font-medium text-black focus:outline-none focus:ring-2 focus:ring-[#043399]">
+                            <input type="password" id="password" name="password" placeholder="Kata sandi akun Anda" class="w-full px-4 py-3.5 border border-[#ccd0d5] rounded-md text-[16px] text-[#1c1e21] placeholder-[#8d949e] focus:outline-none focus:border-[#1877f2] focus:ring-1 focus:ring-[#1877f2]">
                         </div>
 
-                        <button type="submit" class="w-full py-3 px-4 rounded-xl bg-[#043399] hover:bg-[#021f5c] text-white font-black text-xs sm:text-sm shadow-md transition active:scale-98">
-                            Masuk ke Aplikasi &rarr;
-                        </button>
+                        <div class="pt-1">
+                            <button type="submit" class="w-full py-3.5 px-4 rounded-md bg-[#043399] hover:bg-[#021f5c] text-white text-[17px] tracking-wide transition active:scale-[0.99]">
+                                Masuk ke Aplikasi &rarr;
+                            </button>
+                        </div>
                     </form>
                 </div>
             <?php endif; ?>
 
             <!-- Footer of Card -->
-            <div class="p-4 bg-slate-50 border-t-2 border-slate-200 text-center text-[11px] text-slate-500 font-medium">
-                Sistem Terpadu Scrum Vibe &bull; Hak Akses Disesuaikan Berdasarkan Peran
+            <div class="p-4 bg-[#f8f9fa] border-t border-[#dddfe2] text-center text-xs text-[#65676b]">
+                Sistem Terpadu Scrum Vibe • Hak Akses Disesuaikan Berdasarkan Peran
             </div>
 
         </div>
     </main>
 
     <!-- Page Footer -->
-    <footer class="py-4 text-center text-xs text-slate-600 font-medium border-t border-slate-200 bg-white">
+    <footer class="py-4 text-center text-xs text-[#65676b] border-t border-[#dddfe2] bg-white">
         <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-1">
-            <span class="font-black text-[#043399]">VINIX7 &bull; PT VINIX SEVEN AURUM</span>
-            <span>Program Fast Track &copy; <?= date('Y') ?> &bull; Web Development</span>
+            <span class="text-[#043399]">VINIX7 • PT VINIX SEVEN AURUM</span>
+            <span>Program Fast Track &copy; <?= date('Y') ?> • Web Development</span>
         </div>
     </footer>
 
