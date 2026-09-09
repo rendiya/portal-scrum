@@ -15,6 +15,17 @@ $input = json_decode(file_get_contents('php://input'), true) ?? $_POST ?? [];
 
 try {
     switch ($action) {
+        // 0. System Status (check available PDO drivers on Vercel)
+        case 'system_status':
+            echo json_encode([
+                'success' => true,
+                'drivers' => PDO::getAvailableDrivers(),
+                'php_version' => PHP_VERSION,
+                'vercel' => !empty(getenv('VERCEL')),
+                'has_postgres_url' => !empty(getenv('POSTGRES_URL') ?: getenv('DATABASE_URL')),
+            ]);
+            exit;
+
         // 1. Update Task Status
         case 'update_task_status':
             $taskId = $input['id'] ?? '';
