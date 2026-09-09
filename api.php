@@ -136,7 +136,19 @@ try {
             echo json_encode(['success' => true, 'message' => 'Tiket tugas berhasil diperbarui']);
             break;
 
-        // 2d. Get Single Task Details
+        // 2d. Delete Task
+        case 'delete_task':
+            $taskId = $input['id'] ?? ($_GET['id'] ?? '');
+            if (!$taskId) {
+                echo json_encode(['success' => false, 'error' => 'Task ID wajib diisi']);
+                exit;
+            }
+            $stmt = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
+            $stmt->execute([$taskId]);
+            echo json_encode(['success' => true, 'message' => 'Tugas berhasil dihapus']);
+            break;
+
+        // 2e. Get Single Task Details
         case 'get_task':
             $taskId = $_GET['id'] ?? $input['id'] ?? '';
             if (!$taskId) {
