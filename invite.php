@@ -66,14 +66,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $member) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Atur Kata Sandi - ScrumVibe</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1c1e21;
+            background-color: #f0f2f5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .font-black, .font-extrabold { font-weight: 600 !important; }
+        .font-bold { font-weight: 500 !important; }
+    </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 flex items-center justify-center p-4">
+<body class="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 text-[#1c1e21]">
 <div class="w-full max-w-md">
 
     <div class="text-center mb-6">
         <img src="logo/LOGO VINIX.png" alt="VINIX7" class="h-12 w-auto mx-auto object-contain mb-2">
-        <span class="text-xl font-black text-[#043399] tracking-tight">Program Fast Track</span>
-        <p class="text-xs text-slate-500 mt-0.5 font-medium">PT VINIX SEVEN AURUM &bull; Aktivasi Akun Siswa</p>
+        <span class="text-xl text-[#043399] tracking-tight block">Program Fast Track</span>
+        <p class="text-xs text-[#65676b] mt-0.5">PT VINIX SEVEN AURUM &bull; Aktivasi Akun Siswa</p>
     </div>
 
     <?php if (!$token || !$member): ?>

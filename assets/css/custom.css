@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-
-/* assets/css/custom.css - VINIX7 Theme (Inter Font, #043399 Navy Blue, #f59e0b Accent) */
+/* assets/css/custom.css - Clean Facebook-style Typography & VINIX7 Palette */
 
 :root {
   --vinix-blue: #043399;
@@ -9,19 +7,45 @@
   --vinix-yellow: #f59e0b;
   --vinix-yellow-dark: #d97706;
   --vinix-yellow-light: #fef8ee;
-  --text-black: #0f172a;
-  --text-dark: #1e293b;
+  --text-black: #1c1e21;
+  --text-dark: #242526;
+  --text-muted: #65676b;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: var(--text-black);
-  background-color: #f8fafc;
+  background-color: #f0f2f5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Ensure headings and body text inherit crisp tone by default */
-h1, h2, h3, h4, h5, h6, p, span, td, th, label, div {
+/* Ensure natural font weights across tags (remove heavy uncalibrated bold) */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: #1c1e21;
+}
+
+p, span, td, th, label, div, input, textarea, select, button {
   color: inherit;
+}
+
+/* Global button and input base typography */
+input, textarea, select {
+  font-family: inherit;
+}
+
+/* Soften overly bold classes throughout the app for a cleaner Meta/Facebook aesthetic */
+.font-black {
+  font-weight: 600 !important;
+}
+
+.font-extrabold {
+  font-weight: 600 !important;
+}
+
+.font-bold {
+  font-weight: 500 !important;
 }
 
 .text-white {
@@ -29,7 +53,7 @@ h1, h2, h3, h4, h5, h6, p, span, td, th, label, div {
 }
 
 .text-black {
-  color: #000000 !important;
+  color: #1c1e21 !important;
 }
 
 /* Specific text color helpers */

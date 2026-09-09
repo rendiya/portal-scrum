@@ -107,7 +107,16 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+                        sans: [
+                            'SF Pro Display',
+                            '-apple-system',
+                            'BlinkMacSystemFont',
+                            'Segoe UI',
+                            'Roboto',
+                            'Helvetica',
+                            'Arial',
+                            'sans-serif'
+                        ]
                     },
                     colors: {
                         vinix: {
@@ -126,10 +135,13 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/custom.css">
     <style>
-        /* Base typography & colors matching vinix7.id */
+        /* Base typography matching Facebook / Meta clean aesthetic */
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #0f172a;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #1c1e21;
+            background-color: #f0f2f5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         h1, h2, h3, h4, h5, h6, p, span, td, th, label, div, input, textarea, select {
             color: inherit;
@@ -138,7 +150,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             color: #ffffff !important;
         }
         .text-black {
-            color: #0f172a !important;
+            color: #1c1e21 !important;
         }
         .text-yellow-accent {
             color: #f59e0b !important;
@@ -148,7 +160,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 antialiased font-sans">
+<body class="min-h-screen flex flex-col bg-[#f0f2f5] text-[#1c1e21] antialiased font-sans">
 
     <!-- MAIN NAVBAR with VINIX7 Logo & Corporate Navy Border -->
     <header class="no-print bg-white border-b-2 border-[#043399] sticky top-0 z-40 shadow-xs">
