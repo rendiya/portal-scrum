@@ -172,12 +172,15 @@
 
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-700 font-medium">
-        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-                <span class="font-black text-[#043399]">VINIX<span class="text-[#f59e0b]">7</span></span>
-                <span class="text-slate-600">• PT VINIX SEVEN AURUM</span>
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center">
+                <?php if (file_exists(__DIR__ . '/../logo/LOGO VINIX.png')): ?>
+                    <img src="logo/LOGO VINIX.png" alt="VINIX7" class="h-10 sm:h-12 w-auto object-contain">
+                <?php else: ?>
+                    <span class="font-bold text-lg text-[#043399]">VINIX<span class="text-[#f59e0b]">7</span></span>
+                <?php endif; ?>
             </div>
-            <div class="text-slate-600">
+            <div class="text-slate-600 text-xs sm:text-sm">
                 Program Fast Track &copy; <?= date('Y') ?> • Web Development
             </div>
         </div>

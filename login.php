@@ -407,8 +407,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Page Footer -->
     <footer class="py-4 text-center text-xs text-[#65676b] border-t border-[#dddfe2] bg-white">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-1">
-            <span class="text-[#043399]">VINIX7 • PT VINIX SEVEN AURUM</span>
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="flex items-center">
+                <?php if (file_exists(__DIR__ . '/logo/LOGO VINIX.png')): ?>
+                    <img src="logo/LOGO VINIX.png" alt="VINIX7" class="h-8 w-auto object-contain">
+                <?php else: ?>
+                    <span class="text-[#043399] font-bold">VINIX<span class="text-[#f59e0b]">7</span></span>
+                <?php endif; ?>
+            </div>
             <span>Program Fast Track &copy; <?= date('Y') ?> • Web Development</span>
         </div>
     </footer>

@@ -165,22 +165,22 @@ $currentPage = basename($_SERVER['PHP_SELF']);
     <!-- MAIN NAVBAR with VINIX7 Logo & Corporate Navy Border -->
     <header class="no-print bg-white border-b-2 border-[#043399] sticky top-0 z-40 shadow-xs">
         <div class="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between min-h-[4rem] sm:min-h-[4.25rem] py-1.5 sm:py-2 gap-2">
+            <div class="flex items-center justify-between min-h-[4.5rem] sm:min-h-[5rem] py-2 sm:py-2.5 gap-3">
                 <!-- Brand / Logo -->
                 <div class="flex items-center gap-3 sm:gap-4 shrink-0">
-                    <a href="index.php" class="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+                    <a href="index.php" class="flex items-center gap-3 group shrink-0">
                         <?php if (file_exists(__DIR__ . '/../logo/LOGO VINIX.png')): ?>
-                            <img src="logo/LOGO VINIX.png" alt="VINIX7" class="h-10 sm:h-12 w-auto object-contain">
+                            <img src="logo/LOGO VINIX.png" alt="VINIX7" class="h-14 sm:h-16 w-auto object-contain">
                         <?php else: ?>
-                            <div class="h-10 px-3 bg-[#043399] text-white font-black text-lg rounded-lg flex items-center justify-center">
+                            <div class="h-12 px-4 bg-[#043399] text-white font-bold text-xl rounded-lg flex items-center justify-center">
                                 VINIX<span class="text-[#f59e0b] ml-0.5">7</span>
                             </div>
                         <?php endif; ?>
                         <div>
-                            <span class="text-sm sm:text-base font-black tracking-tight text-slate-900 leading-tight block whitespace-nowrap">
+                            <span class="text-base sm:text-lg font-bold tracking-tight text-slate-900 leading-tight block whitespace-nowrap">
                                 Web Development
                             </span>
-                            <span class="block text-[10px] sm:text-[11px] text-slate-600 font-semibold tracking-tight whitespace-nowrap">
+                            <span class="block text-xs text-slate-600 font-normal tracking-tight whitespace-nowrap">
                                 Program Fast Track
                             </span>
                         </div>
