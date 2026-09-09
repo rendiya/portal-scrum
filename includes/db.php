@@ -130,6 +130,13 @@ try {
 
     if ($rowCount === 0) {
         seedInitialData($pdo);
+    } else {
+        // Ensure 8 modules are populated if old database had only 4
+        $stmtLms = $pdo->query("SELECT COUNT(*) as count FROM lms_modules");
+        $lmsCount = (int)$stmtLms->fetch()['count'];
+        if ($lmsCount < 8) {
+            seedLmsModulesOnly($pdo);
+        }
     }
 
 } catch (PDOException $e) {
@@ -146,80 +153,159 @@ function seedInitialData($pdo) {
     // 2. Guru / Super Admin Member
     $stmt = $pdo->prepare("INSERT INTO members (id, name, role, team_id, phone, email, university, major, token, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     $stmt->execute(['mem-guru', 'Rendi Yusuf Azhari', 'guru', '', '6285234332322', 'ligerrendy@gmail.com', 'PT VINIX SEVEN AURUM', 'Program Fast Track', 'guru-master-token', $now]);
-    // 3. LMS Modules
+    // 3. LMS Modules (8 Pertemuan Kurikulum Fast Track Web)
     $modules = [
         [
-            'lms-w1', 1, 'Pertemuan 1: Fondasi Agile, Scrum, & Menyusun PRD Berkualitas',
-            'Memahami pola pikir Agile, siklus hidup Scrum, pembagian peran nyata (PM, BE, FE), dan teknik menulis Product Requirement Document.',
+            'lms-w1', 1, 'Pertemuan 1: Pengenalan Website & Product Requirement Document',
+            'Memahami anatomi website modern (client, server, database, domain) dan menerjemahkan ide produk menjadi PRD yang siap dikerjakan tim.',
             json_encode([
-                "Memahami perbedaan metodologi Agile vs Waterfall dalam pengembangan software",
-                "Mengenal tanggung jawab spesifik PM, Backend Engineer, dan Frontend Engineer",
-                "Mampu menyusun PRD lengkap dengan Problem Statement, User Stories, dan Acceptance Criteria"
-            ]),
+                "Menjelaskan cara kerja website: browser, siklus request-response, serta beda client-side dan server-side",
+                "Membedakan jenis website (statis, dinamis, SPA, e-commerce) beserta konsekuensi teknisnya",
+                "Menyusun PRD lengkap: problem statement, user persona, user story, dan acceptance criteria"
+            ], JSON_UNESCAPED_UNICODE),
             json_encode([
                 "Dokumen PRD versi 1.0 yang disetujui Guru/Instruktur",
-                "Daftar User Persona dan Acceptance Criteria awal",
+                "Daftar 2 User Persona dan minimal 8 User Story beserta Acceptance Criteria",
                 "Logbook Harian Pertemuan 1"
-            ]),
+            ], JSON_UNESCAPED_UNICODE),
             json_encode([
-                ["title" => "Panduan Agile Manifesto", "url" => "https://agilemanifesto.org/"],
-                ["title" => "Contoh Template PRD Industri", "url" => "https://www.atlassian.com/agile/product-management/requirements"]
-            ]),
-            "### Mengapa Agile & Scrum Penting?\nDalam dunia industri modern, kebutuhan pengguna berubah sangat cepat. Pendekatan lama (Waterfall) membutuhkan waktu berbulan-bulan sebelum pengguna bisa melihat produk jadi. Scrum membagi pekerjaan ke dalam siklus pendek (**Sprint**, biasanya 1-2 minggu) sehingga tim bisa merilis fitur secara bertahap dan mendapatkan umpan balik langsung.\n\n### 3 Peran Kunci dalam Tim Kita:\n1. **Product Manager (PM)**:\n   - Jembatan antara kebutuhan bisnis/pengguna dengan tim pengembang teknis.\n   - Menulis **PRD (Product Requirement Document)** yang jelas dan terukur.\n   - Memastikan tim tahu *mengapa* fitur tersebut dibangun (*The Why & What*).\n\n2. **Backend Engineer (BE)**:\n   - Merancang struktur data (Database Schema) dan logika bisnis.\n   - Membuat **API Endpoint (REST / JSON)** yang aman, cepat, dan teruji.\n   - Menyediakan kontrak API (*API Contract*) agar FE bisa melakukan integrasi.\n\n3. **Frontend Engineer (FE)**:\n   - Menerjemahkan spesifikasi PRD dan desain wireframe menjadi antarmuka interaktif yang nyaman digunakan (*User Experience*).\n   - Menghubungkan antarmuka ke API yang disediakan oleh Backend Engineer.\n   - Menjaga responsivitas di berbagai ukuran layar."
+                ["title" => "Panduan Menulis PRD (Atlassian)", "url" => "https://www.atlassian.com/agile/product-management/requirements"],
+                ["title" => "Learn Web Development (MDN)", "url" => "https://developer.mozilla.org/en-US/docs/Learn_web_development"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Anatomi Sebuah Website\n1. **Client (Browser)**: Merender HTML, CSS, dan JavaScript menjadi tampilan yang dilihat pengguna.\n2. **Server**: Memproses logika bisnis dan mengembalikan data atau halaman.\n3. **Database**: Menyimpan data permanen seperti user, produk, dan transaksi.\n4. **Domain & DNS**: Alamat yang menerjemahkan nama website ke alamat IP server.\n\n### Struktur PRD yang Dipakai Industri\n1. **Problem Statement**: Masalah nyata yang sudah divalidasi, bukan asumsi tim.\n2. **Goal & Success Metric**: Ukuran keberhasilan yang bisa dihitung.\n3. **User Persona**: Profil pengguna target beserta kebutuhan dan hambatannya.\n4. **User Story**: Format \"Sebagai [peran], saya ingin [aksi], agar [manfaat]\".\n5. **Acceptance Criteria**: Syarat sebuah story boleh dinyatakan selesai.\n6. **Out of Scope**: Hal yang sengaja tidak dikerjakan pada rilis ini.\n\n> **Catatan Guru**: Tolak PRD yang hanya berisi daftar fitur tanpa problem statement."
         ],
         [
-            'lms-w2', 2, 'Pertemuan 2: Sprint Planning, Story Points, & Backlog Breakdown',
-            'Mengubah dokumen PRD menjadi tiket kerja teknis di Scrum Board, estimasi kompleksitas dengan Fibonacci Story Points, dan komitmen Sprint Backlog.',
+            'lms-w2', 2, 'Pertemuan 2: Dasar UI/UX & Design Thinking',
+            'Mengubah kebutuhan di PRD menjadi rancangan antarmuka yang mudah dipakai, lewat lima tahap Design Thinking dan prinsip dasar desain visual.',
             json_encode([
-                "Mampu memecah poin PRD menjadi tiket spesifik Frontend dan Backend",
-                "Memahami estimasi Story Points menggunakan deret Fibonacci (1, 2, 3, 5, 8)",
-                "Menjalankan sesi simulasi Sprint Planning bersama seluruh anggota tim"
-            ]),
+                "Menjalankan lima tahap Design Thinking: empathize, define, ideate, prototype, test",
+                "Membedakan peran UX (alur dan kemudahan) dengan UI (visual dan komponen)",
+                "Membuat wireframe sampai prototype interaktif yang siap diserahkan ke frontend"
+            ], JSON_UNESCAPED_UNICODE),
             json_encode([
-                "Papan Scrum Board terisi tiket Backlog terperinci",
-                "Semua tiket memiliki Story Points dan estimasi waktu yang jelas",
-                "Logbook Harian Pertemuan 2"
-            ]),
+                "Wireframe low-fidelity untuk 5 halaman utama",
+                "Mockup high-fidelity dan prototype interaktif di Figma",
+                "Mini design system: palet warna, skala tipografi, dan komponen tombol"
+            ], JSON_UNESCAPED_UNICODE),
             json_encode([
-                ["title" => "Story Points & Planning Poker Guide", "url" => "https://www.mountaingoatsoftware.com/agile/planning-poker"]
-            ]),
-            "### Apa itu Story Points?\nStory Points adalah satuan ukuran relatif untuk memperkirakan usaha (*effort*), kompleksitas teknis, dan ketidakpastian dalam menyelesaikan suatu tugas. Story Points **bukan** jam kerja mutlak, melainkan perbandingan bobot.\n\n### Skala Fibonacci yang Digunakan:\n- **1 Poin**: Tugas sangat sederhana (contoh: mengubah teks tombol, update konfigurasi env).\n- **2 Poin**: Tugas mudah dan jelas (contoh: slicing satu komponen kartu sederhana).\n- **3 Poin**: Tugas standar dengan logic moderat (contoh: form validasi login, endpoint CRUD tunggal).\n- **5 Poin**: Tugas kompleks yang butuh integrasi lebih dalam (contoh: dashboard dengan agregasi database dan grafik).\n- **8 Poin**: Tugas sangat besar yang berisiko; sebaiknya dipecah menjadi dua tugas lebih kecil.\n\n### Kolaborasi FE & BE saat Breakdown:\nSebelum sprint dimulai, FE dan BE harus menyepakati **API Contract**:\n- Format URL (misal: POST /api/auth/login)\n- Request Body JSON\n- Response JSON sukses dan format error code."
+                ["title" => "Design Thinking 101 (Nielsen Norman Group)", "url" => "https://www.nngroup.com/articles/design-thinking/"],
+                ["title" => "Material Design 3 Foundations", "url" => "https://m3.material.io/foundations"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Lima Tahap Design Thinking\n1. **Empathize**: Wawancara calon pengguna, catat kata-kata aslinya.\n2. **Define**: Rumuskan satu kalimat masalah yang paling layak dipecahkan.\n3. **Ideate**: Kumpulkan banyak alternatif solusi dulu, saring belakangan.\n4. **Prototype**: Buat versi murah yang bisa diklik, bukan versi sempurna.\n5. **Test**: Uji ke pengguna asli, perbaiki, lalu ulangi.\n\n### Prinsip Dasar UI\n1. **Hierarki Visual**: Ukuran, ketebalan, dan jarak menentukan apa yang dibaca lebih dulu.\n2. **Konsistensi**: Komponen yang sama berperilaku sama di semua halaman.\n3. **White Space**: Ruang kosong adalah alat baca, bukan ruang terbuang.\n4. **Kontras & Aksesibilitas**: Rasio kontras teks minimal 4.5:1 sesuai standar WCAG AA.\n\n### Alur Kerja Desain\nWireframe (low-fidelity) &rarr; Mockup (high-fidelity) &rarr; Prototype interaktif &rarr; Handoff ke Frontend Engineer."
         ],
         [
-            'lms-w3', 3, 'Pertemuan 3: Sprint Execution, Daily Standup, & Sinkronisasi API',
-            'Fase eksekusi aktif, menjalankan Daily Standup singkat, sinkronisasi integrasi Frontend-Backend, dan mengatasi blockers.',
+            'lms-w3', 3, 'Pertemuan 3: Dasar HTML dan CSS',
+            'Menerjemahkan mockup menjadi halaman nyata: struktur semantik dengan HTML dan tata letak responsif dengan CSS, tanpa bantuan framework.',
             json_encode([
-                "Melakukan Daily Standup 3 pertanyaan harian (kemarin, hari ini, kendala)",
-                "Melakukan integrasi API antara FE dan BE secara lancar",
-                "Mendokumentasikan hambatan (blockers) di Logbook secara jujur dan solutif"
-            ]),
+                "Menyusun struktur halaman dengan elemen semantik dan hierarki heading yang benar",
+                "Menguasai box model, selector, dan cascade agar aturan gaya tidak saling menimpa",
+                "Membangun tata letak responsif memakai Flexbox, Grid, dan media query mobile-first"
+            ], JSON_UNESCAPED_UNICODE),
             json_encode([
-                "Fitur utama berstatus In Review / Testing",
-                "Integrasi antarmuka dan endpoint backend berhasil tanpa error",
-                "Logbook Harian Pertemuan 3"
-            ]),
+                "Satu halaman landing statis responsif memakai HTML dan CSS murni",
+                "Repository Git berisi commit harian dengan pesan yang jelas",
+                "Checklist uji tampilan pada lebar 360px, 768px, dan 1440px"
+            ], JSON_UNESCAPED_UNICODE),
             json_encode([
-                ["title" => "Effective Daily Standup Tips", "url" => "https://martinfowler.com/articles/itsNotJustStandingUp.html"]
-            ]),
-            "### 3 Pertanyaan Sakti Daily Standup (10-15 Menit):\n1. **Apa yang sudah saya selesaikan kemarin?**\n2. **Apa yang akan saya kerjakan hari ini?**\n3. **Apakah ada kendala (*blocker*) yang menghambat pekerjaan saya?**\n\n### Menghadapi Ketergantungan (Dependency Block):\nSeringkali Frontend terhambat karena Backend belum menyelesaikan endpoint. Bagaimana solusinya?\n- **Mock Data**: FE membuat data tiruan (dummy JSON) terlebih dahulu sehingga pengerjaan UI tidak perlu berhenti.\n- **Komunikasi Aktif**: BE memberi kabar segera setelah endpoint siap diuji di staging/local."
+                ["title" => "Referensi HTML (MDN)", "url" => "https://developer.mozilla.org/en-US/docs/Web/HTML"],
+                ["title" => "Learn CSS (web.dev)", "url" => "https://web.dev/learn/css"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### HTML: Struktur dan Semantik\n1. **Elemen semantik**: header, nav, main, section, article, footer.\n2. **Form dan input**: pasangan label-input, tipe input, dan validasi bawaan browser.\n3. **Aksesibilitas**: atribut alt pada gambar serta urutan heading h1 sampai h6 yang runtut.\n\n### CSS: Tampilan dan Tata Letak\n1. **Selector & Cascade**: Spesifisitas menentukan aturan mana yang menang.\n2. **Box Model**: content, padding, border, margin.\n3. **Flexbox**: Tata letak satu dimensi, untuk baris atau kolom.\n4. **Grid**: Tata letak dua dimensi, untuk kerangka halaman.\n5. **Responsive**: Unit relatif (rem, %, vw) digabung media query, dikerjakan mobile-first.\n\n> **Aturan praktik**: Dilarang memakai framework CSS pada pertemuan ini. Tujuannya melatih dasar, bukan mengejar kecepatan."
         ],
         [
-            'lms-w4', 4, 'Pertemuan 4: Sprint Review (Demo), Retrospective, & Weekly Report',
-            'Melakukan demo hasil karya produk kepada Guru/Stakeholder, evaluasi Sprint Retrospective, dan pembuatan Laporan Mingguan otomatis.',
+            'lms-w4', 4, 'Pertemuan 4: Monolith dan Fullstack Website',
+            'Menentukan bentuk arsitektur aplikasi tim: kenapa monolith biasanya pilihan paling masuk akal untuk tim kecil, dan bagaimana lapisan fullstack disusun.',
             json_encode([
-                "Mempresentasikan demo fitur fungsional sesuai Acceptance Criteria",
-                "Menjalankan Sprint Retrospective (What went well, What can be improved)",
-                "Mengevaluasi Velocity tim dan kepatuhan pengisian Logbook"
-            ]),
+                "Membandingkan monolith, modular monolith, dan microservices beserta biaya operasionalnya",
+                "Memetakan lapisan aplikasi fullstack: presentation, business logic, data, dan API",
+                "Merancang skema database dan memilih tech stack dengan alasan yang bisa dipertahankan"
+            ], JSON_UNESCAPED_UNICODE),
             json_encode([
-                "Aplikasi berfungsi dan teruji end-to-end",
-                "Catatan Sprint Retrospective tim",
-                "Laporan Mingguan Otomatis (Weekly Report) yang diekspor"
-            ]),
+                "Diagram arsitektur sistem satu halaman",
+                "Skema database (ERD) minimal 4 tabel beserta relasinya",
+                "Dokumen keputusan tech stack beserta alasan dan risikonya"
+            ], JSON_UNESCAPED_UNICODE),
             json_encode([
-                ["title" => "Sprint Retrospective Primer", "url" => "https://www.scrum.org/resources/what-is-a-sprint-retrospective"]
-            ]),
-            "### Sprint Review vs Sprint Retrospective:\n- **Sprint Review**: Fokus pada **PRODUK** (Apakah fitur yang dibuat sesuai dengan kebutuhan dan berfungsi dengan benar? Diikuti dengan demo langsung).\n- **Sprint Retrospective**: Fokus pada **PROSES & TIM** (Bagaimana cara kerja kita bersama? Apa komunikasi yang kurang? Bagaimana meningkatkan kecepatan di sprint berikutnya?).\n\n### Pertanyaan Evaluasi Retrospective:\n1. **Mad / Sad / Glad**: Apa yang membuat tim frustrasi, sedih, atau bangga?\n2. **Action Item**: 1 atau 2 perbaikan konkret untuk sprint berikutnya."
+                ["title" => "Monolith First (Martin Fowler)", "url" => "https://martinfowler.com/bliki/MonolithFirst.html"],
+                ["title" => "Full Stack Roadmap", "url" => "https://roadmap.sh/full-stack"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Pilihan Arsitektur\n1. **Monolith**: Frontend, backend, dan database dalam satu basis kode dan satu proses deploy.\n2. **Modular Monolith**: Tetap satu deploy, tetapi modul dipisah rapi per domain.\n3. **Microservices**: Banyak servis kecil yang deploy sendiri-sendiri, biaya operasionalnya tinggi.\n\n### Kenapa Mulai dari Monolith?\nTim kecil dengan kebutuhan yang masih sering berubah paling murah dilayani monolith. Pecah menjadi servis terpisah hanya setelah batas antar domain terbukti stabil dan beban trafik benar-benar menuntutnya.\n\n### Lapisan Aplikasi Fullstack\n1. **Presentation Layer**: Halaman dan komponen antarmuka.\n2. **Business Logic Layer**: Aturan main aplikasi, misalnya syarat sebuah checkout boleh diproses.\n3. **Data Layer**: Model, query, dan migrasi database.\n4. **API**: Kontrak yang menyambungkan frontend dan backend, umumnya REST berformat JSON."
+        ],
+        [
+            'lms-w5', 5, 'Pertemuan 5: Frontend dan Backend Engineer',
+            'Membagi pekerjaan nyata antara frontend dan backend, lalu menyepakati kontrak API lebih dulu supaya kedua sisi bisa berjalan paralel.',
+            json_encode([
+                "Menjelaskan tanggung jawab spesifik Frontend Engineer dan Backend Engineer dalam satu fitur",
+                "Menyusun kontrak API: endpoint, method, request body, response, dan kode status",
+                "Menjalankan alur kolaborasi Git: branch per fitur, pull request, dan code review"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Dokumen kontrak API berisi minimal 6 endpoint",
+                "Satu fitur utuh end-to-end: form di frontend, API di backend, data tersimpan di database",
+                "Catatan hasil code review beserta perbaikan yang sudah dikerjakan"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Frontend Roadmap", "url" => "https://roadmap.sh/frontend"],
+                ["title" => "Backend Roadmap", "url" => "https://roadmap.sh/backend"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Pembagian Peran\n1. **Frontend Engineer**: State antarmuka, integrasi API, performa render, dan aksesibilitas.\n2. **Backend Engineer**: Endpoint, validasi, autentikasi, query database, dan keamanan data.\n3. **Kontrak API Lebih Dulu**: Disepakati sebelum coding, supaya frontend bisa memakai data tiruan sambil menunggu backend siap.\n\n### Standar Kontrak API\n1. **Method**: GET untuk membaca, POST untuk membuat, PUT/PATCH untuk mengubah, DELETE untuk menghapus.\n2. **Kode Status**: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Server Error.\n3. **Format Error Konsisten**: Selalu kembalikan objek error dengan field code dan message.\n\n### Aturan Kolaborasi\nBranch per fitur &rarr; Pull Request &rarr; Code Review &rarr; baru Merge. Tidak ada push langsung ke branch main."
+        ],
+        [
+            'lms-w6', 6, 'Pertemuan 6: Testing dan Usability',
+            'Membuktikan produk bukan sekadar jalan, tetapi juga benar dan mudah dipakai, lewat piramida testing dan usability testing bersama pengguna asli.',
+            json_encode([
+                "Menyusun test case yang diturunkan langsung dari acceptance criteria di PRD",
+                "Membedakan unit test, integration test, dan end-to-end test beserta porsi idealnya",
+                "Menjalankan usability testing berbasis tugas dan mengukur hasilnya secara objektif"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Test case dan hasil eksekusinya, minimal 15 kasus uji",
+                "Laporan usability testing bersama 5 responden di luar tim",
+                "Backlog perbaikan yang sudah diurutkan berdasarkan severity"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Usability Testing 101 (Nielsen Norman Group)", "url" => "https://www.nngroup.com/articles/usability-testing-101/"],
+                ["title" => "Pengujian End-to-End dengan Playwright", "url" => "https://playwright.dev/docs/intro"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Piramida Testing\n1. **Unit Test**: Menguji satu fungsi kecil, jumlahnya banyak dan jalannya cepat.\n2. **Integration Test**: Menguji beberapa modul yang saling berbicara, misalnya API dengan database.\n3. **End-to-End Test**: Menguji alur pengguna di browser sungguhan, jumlahnya sedikit tapi paling meyakinkan.\n\n### Usability Testing\n1. Lima responden sudah cukup untuk menangkap sebagian besar masalah utama.\n2. **Berbasis Tugas**: Beri tugas nyata, jangan beri petunjuk cara mengerjakannya.\n3. **Yang Diukur**: Tingkat keberhasilan tugas, waktu penyelesaian, jumlah error, dan titik kebingungan.\n4. **Severity**: Kategorikan temuan menjadi kritis, mayor, atau minor sebelum masuk backlog.\n\n### Definition of Done\nSebuah fitur baru dianggap selesai jika lolos test, lolos code review, dan tidak menurunkan hasil usability."
+        ],
+        [
+            'lms-w7', 7, 'Pertemuan 7: Hosting, Domain, dan Deployment',
+            'Menaikkan aplikasi dari laptop ke internet: membeli domain, mengatur DNS, mengamankan dengan HTTPS, dan merilis lewat pipeline otomatis.',
+            json_encode([
+                "Menjelaskan hubungan domain, DNS, hosting, dan sertifikat SSL dalam satu proses rilis",
+                "Membedakan environment development, staging, dan production beserta pengelolaan rahasianya",
+                "Menjalankan pipeline CI/CD dari commit sampai production, lengkap dengan rencana rollback"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Website tayang di domain publik dengan HTTPS aktif",
+                "Pipeline CI/CD yang berjalan otomatis setiap ada commit baru",
+                "Runbook deployment dan rollback satu halaman"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Apa itu DNS (Cloudflare Learning)", "url" => "https://www.cloudflare.com/learning/dns/what-is-dns/"],
+                ["title" => "Dokumentasi Deployments (Vercel)", "url" => "https://vercel.com/docs/deployments"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Komponen Sebuah Rilis\n1. **Domain**: Nama alamat yang disewa dari registrar, misalnya .com, .id, atau .my.id.\n2. **DNS**: Penerjemah nama domain ke alamat IP, diatur lewat record A, CNAME, dan MX.\n3. **Hosting**: Tempat aplikasi berjalan, bisa shared hosting, VPS, atau platform PaaS.\n4. **SSL/HTTPS**: Sertifikat wajib. Tanpa itu browser menandai situs sebagai tidak aman.\n\n### Alur Deployment\nCommit &rarr; Build &rarr; Test Otomatis (CI) &rarr; Deploy ke Staging &rarr; Verifikasi &rarr; Deploy ke Production (CD).\n\n### Tiga Environment\n1. **Development**: Laptop masing-masing anggota tim.\n2. **Staging**: Semirip mungkin dengan production, dipakai untuk uji akhir sebelum rilis.\n3. **Production**: Dipakai pengguna asli. Semua rahasia disimpan di environment variable, tidak pernah di dalam kode.\n\n> **Aturan Wajib**: Siapkan cara kembali ke versi sebelumnya (*rollback plan*) sebelum menekan tombol rilis."
+        ],
+        [
+            'lms-w8', 8, 'Pertemuan 8: Website Builder No-Code, Low-Code, dan Coding with AI',
+            'Memilih jalur pembuatan website yang paling masuk akal untuk situasi tertentu, dan memakai AI sebagai alat bantu coding tanpa kehilangan kendali mutu.',
+            json_encode([
+                "Membandingkan jalur no-code, low-code, dan coding dari sisi biaya, kecepatan, dan batasannya",
+                "Menentukan jalur yang tepat berdasarkan kompleksitas logika bisnis dan target waktu rilis",
+                "Memakai AI untuk scaffolding, refactor, dan dokumentasi dengan disiplin review yang jelas"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Satu landing page versi no-code yang sudah tayang",
+                "Tabel perbandingan tiga jalur: biaya, waktu kerja, batasan, dan risiko vendor lock-in",
+                "Demo akhir dan presentasi produk tim di depan Guru/Instruktur"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Webflow University", "url" => "https://university.webflow.com/"],
+                ["title" => "Panduan Claude Code", "url" => "https://docs.claude.com/en/docs/claude-code/overview"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Tiga Jalur Membangun Website\n1. **No-Code**: Merakit secara visual, misalnya Webflow, Framer, atau Wix. Paling cepat untuk landing page dan uji pasar.\n2. **Low-Code**: Visual ditambah sedikit logika atau kode, misalnya Bubble atau Retool.\n3. **Coding with AI**: Tetap menulis kode sendiri, dengan AI membantu scaffolding, refactor, penulisan test, dan dokumentasi.\n\n### Cara Memilih Jalur\n1. Butuh cepat memvalidasi pasar dan logikanya sederhana &rarr; pilih no-code.\n2. Ada alur data dan pembagian role pengguna tetapi tim kecil &rarr; pilih low-code.\n3. Logika bisnis unik dan butuh skala serta kepemilikan penuh &rarr; pilih coding dibantu AI.\n\n### Disiplin Memakai AI\n1. **Beri Konteks**: Sertakan PRD, kontrak API, dan standar kode tim di dalam prompt.\n2. **Selalu Review**: AI bisa salah, dan kode tetap menjadi tanggung jawab engineer.\n3. **Uji Sebelum Merge**: Hasil AI wajib lolos test yang sama dengan kode buatan manusia.\n4. **Waspadai Vendor Lock-in**: Sebelum memilih platform no-code, pastikan data masih bisa diekspor."
         ]
     ];
 
@@ -240,6 +326,172 @@ function seedInitialData($pdo) {
     $stmt = $pdo->prepare("INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)");
     foreach ($settings as $s) {
         $stmt->execute($s);
+    }
+}
+
+function seedLmsModulesOnly($pdo) {
+    $allModules = [
+        [
+            'lms-w1', 1, 'Pertemuan 1: Pengenalan Website & Product Requirement Document',
+            'Memahami anatomi website modern (client, server, database, domain) dan menerjemahkan ide produk menjadi PRD yang siap dikerjakan tim.',
+            json_encode([
+                "Menjelaskan cara kerja website: browser, siklus request-response, serta beda client-side dan server-side",
+                "Membedakan jenis website (statis, dinamis, SPA, e-commerce) beserta konsekuensi teknisnya",
+                "Menyusun PRD lengkap: problem statement, user persona, user story, dan acceptance criteria"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Dokumen PRD versi 1.0 yang disetujui Guru/Instruktur",
+                "Daftar 2 User Persona dan minimal 8 User Story beserta Acceptance Criteria",
+                "Logbook Harian Pertemuan 1"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Panduan Menulis PRD (Atlassian)", "url" => "https://www.atlassian.com/agile/product-management/requirements"],
+                ["title" => "Learn Web Development (MDN)", "url" => "https://developer.mozilla.org/en-US/docs/Learn_web_development"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Anatomi Sebuah Website\n1. **Client (Browser)**: Merender HTML, CSS, dan JavaScript menjadi tampilan yang dilihat pengguna.\n2. **Server**: Memproses logika bisnis dan mengembalikan data atau halaman.\n3. **Database**: Menyimpan data permanen seperti user, produk, dan transaksi.\n4. **Domain & DNS**: Alamat yang menerjemahkan nama website ke alamat IP server.\n\n### Struktur PRD yang Dipakai Industri\n1. **Problem Statement**: Masalah nyata yang sudah divalidasi, bukan asumsi tim.\n2. **Goal & Success Metric**: Ukuran keberhasilan yang bisa dihitung.\n3. **User Persona**: Profil pengguna target beserta kebutuhan dan hambatannya.\n4. **User Story**: Format \"Sebagai [peran], saya ingin [aksi], agar [manfaat]\".\n5. **Acceptance Criteria**: Syarat sebuah story boleh dinyatakan selesai.\n6. **Out of Scope**: Hal yang sengaja tidak dikerjakan pada rilis ini.\n\n> **Catatan Guru**: Tolak PRD yang hanya berisi daftar fitur tanpa problem statement."
+        ],
+        [
+            'lms-w2', 2, 'Pertemuan 2: Dasar UI/UX & Design Thinking',
+            'Mengubah kebutuhan di PRD menjadi rancangan antarmuka yang mudah dipakai, lewat lima tahap Design Thinking dan prinsip dasar desain visual.',
+            json_encode([
+                "Menjalankan lima tahap Design Thinking: empathize, define, ideate, prototype, test",
+                "Membedakan peran UX (alur dan kemudahan) dengan UI (visual dan komponen)",
+                "Membuat wireframe sampai prototype interaktif yang siap diserahkan ke frontend"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Wireframe low-fidelity untuk 5 halaman utama",
+                "Mockup high-fidelity dan prototype interaktif di Figma",
+                "Mini design system: palet warna, skala tipografi, dan komponen tombol"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Design Thinking 101 (Nielsen Norman Group)", "url" => "https://www.nngroup.com/articles/design-thinking/"],
+                ["title" => "Material Design 3 Foundations", "url" => "https://m3.material.io/foundations"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Lima Tahap Design Thinking\n1. **Empathize**: Wawancara calon pengguna, catat kata-kata aslinya.\n2. **Define**: Rumuskan satu kalimat masalah yang paling layak dipecahkan.\n3. **Ideate**: Kumpulkan banyak alternatif solusi dulu, saring belakangan.\n4. **Prototype**: Buat versi murah yang bisa diklik, bukan versi sempurna.\n5. **Test**: Uji ke pengguna asli, perbaiki, lalu ulangi.\n\n### Prinsip Dasar UI\n1. **Hierarki Visual**: Ukuran, ketebalan, dan jarak menentukan apa yang dibaca lebih dulu.\n2. **Konsistensi**: Komponen yang sama berperilaku sama di semua halaman.\n3. **White Space**: Ruang kosong adalah alat baca, bukan ruang terbuang.\n4. **Kontras & Aksesibilitas**: Rasio kontras teks minimal 4.5:1 sesuai standar WCAG AA.\n\n### Alur Kerja Desain\nWireframe (low-fidelity) &rarr; Mockup (high-fidelity) &rarr; Prototype interaktif &rarr; Handoff ke Frontend Engineer."
+        ],
+        [
+            'lms-w3', 3, 'Pertemuan 3: Dasar HTML dan CSS',
+            'Menerjemahkan mockup menjadi halaman nyata: struktur semantik dengan HTML dan tata letak responsif dengan CSS, tanpa bantuan framework.',
+            json_encode([
+                "Menyusun struktur halaman dengan elemen semantik dan hierarki heading yang benar",
+                "Menguasai box model, selector, dan cascade agar aturan gaya tidak saling menimpa",
+                "Membangun tata letak responsif memakai Flexbox, Grid, dan media query mobile-first"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Satu halaman landing statis responsif memakai HTML dan CSS murni",
+                "Repository Git berisi commit harian dengan pesan yang jelas",
+                "Checklist uji tampilan pada lebar 360px, 768px, dan 1440px"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Referensi HTML (MDN)", "url" => "https://developer.mozilla.org/en-US/docs/Web/HTML"],
+                ["title" => "Learn CSS (web.dev)", "url" => "https://web.dev/learn/css"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### HTML: Struktur dan Semantik\n1. **Elemen semantik**: header, nav, main, section, article, footer.\n2. **Form dan input**: pasangan label-input, tipe input, dan validasi bawaan browser.\n3. **Aksesibilitas**: atribut alt pada gambar serta urutan heading h1 sampai h6 yang runtut.\n\n### CSS: Tampilan dan Tata Letak\n1. **Selector & Cascade**: Spesifisitas menentukan aturan mana yang menang.\n2. **Box Model**: content, padding, border, margin.\n3. **Flexbox**: Tata letak satu dimensi, untuk baris atau kolom.\n4. **Grid**: Tata letak dua dimensi, untuk kerangka halaman.\n5. **Responsive**: Unit relatif (rem, %, vw) digabung media query, dikerjakan mobile-first.\n\n> **Aturan praktik**: Dilarang memakai framework CSS pada pertemuan ini. Tujuannya melatih dasar, bukan mengejar kecepatan."
+        ],
+        [
+            'lms-w4', 4, 'Pertemuan 4: Monolith dan Fullstack Website',
+            'Menentukan bentuk arsitektur aplikasi tim: kenapa monolith biasanya pilihan paling masuk akal untuk tim kecil, dan bagaimana lapisan fullstack disusun.',
+            json_encode([
+                "Membandingkan monolith, modular monolith, dan microservices beserta biaya operasionalnya",
+                "Memetakan lapisan aplikasi fullstack: presentation, business logic, data, dan API",
+                "Merancang skema database dan memilih tech stack dengan alasan yang bisa dipertahankan"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Diagram arsitektur sistem satu halaman",
+                "Skema database (ERD) minimal 4 tabel beserta relasinya",
+                "Dokumen keputusan tech stack beserta alasan dan risikonya"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Monolith First (Martin Fowler)", "url" => "https://martinfowler.com/bliki/MonolithFirst.html"],
+                ["title" => "Full Stack Roadmap", "url" => "https://roadmap.sh/full-stack"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Pilihan Arsitektur\n1. **Monolith**: Frontend, backend, dan database dalam satu basis kode dan satu proses deploy.\n2. **Modular Monolith**: Tetap satu deploy, tetapi modul dipisah rapi per domain.\n3. **Microservices**: Banyak servis kecil yang deploy sendiri-sendiri, biaya operasionalnya tinggi.\n\n### Kenapa Mulai dari Monolith?\nTim kecil dengan kebutuhan yang masih sering berubah paling murah dilayani monolith. Pecah menjadi servis terpisah hanya setelah batas antar domain terbukti stabil dan beban trafik benar-benar menuntutnya.\n\n### Lapisan Aplikasi Fullstack\n1. **Presentation Layer**: Halaman dan komponen antarmuka.\n2. **Business Logic Layer**: Aturan main aplikasi, misalnya syarat sebuah checkout boleh diproses.\n3. **Data Layer**: Model, query, dan migrasi database.\n4. **API**: Kontrak yang menyambungkan frontend dan backend, umumnya REST berformat JSON."
+        ],
+        [
+            'lms-w5', 5, 'Pertemuan 5: Frontend dan Backend Engineer',
+            'Membagi pekerjaan nyata antara frontend dan backend, lalu menyepakati kontrak API lebih dulu supaya kedua sisi bisa berjalan paralel.',
+            json_encode([
+                "Menjelaskan tanggung jawab spesifik Frontend Engineer dan Backend Engineer dalam satu fitur",
+                "Menyusun kontrak API: endpoint, method, request body, response, dan kode status",
+                "Menjalankan alur kolaborasi Git: branch per fitur, pull request, dan code review"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Dokumen kontrak API berisi minimal 6 endpoint",
+                "Satu fitur utuh end-to-end: form di frontend, API di backend, data tersimpan di database",
+                "Catatan hasil code review beserta perbaikan yang sudah dikerjakan"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Frontend Roadmap", "url" => "https://roadmap.sh/frontend"],
+                ["title" => "Backend Roadmap", "url" => "https://roadmap.sh/backend"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Pembagian Peran\n1. **Frontend Engineer**: State antarmuka, integrasi API, performa render, dan aksesibilitas.\n2. **Backend Engineer**: Endpoint, validasi, autentikasi, query database, dan keamanan data.\n3. **Kontrak API Lebih Dulu**: Disepakati sebelum coding, supaya frontend bisa memakai data tiruan sambil menunggu backend siap.\n\n### Standar Kontrak API\n1. **Method**: GET untuk membaca, POST untuk membuat, PUT/PATCH untuk mengubah, DELETE untuk menghapus.\n2. **Kode Status**: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 404 Not Found, 500 Server Error.\n3. **Format Error Konsisten**: Selalu kembalikan objek error dengan field code dan message.\n\n### Aturan Kolaborasi\nBranch per fitur &rarr; Pull Request &rarr; Code Review &rarr; baru Merge. Tidak ada push langsung ke branch main."
+        ],
+        [
+            'lms-w6', 6, 'Pertemuan 6: Testing dan Usability',
+            'Membuktikan produk bukan sekadar jalan, tetapi juga benar dan mudah dipakai, lewat piramida testing dan usability testing bersama pengguna asli.',
+            json_encode([
+                "Menyusun test case yang diturunkan langsung dari acceptance criteria di PRD",
+                "Membedakan unit test, integration test, dan end-to-end test beserta porsi idealnya",
+                "Menjalankan usability testing berbasis tugas dan mengukur hasilnya secara objektif"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Test case dan hasil eksekusinya, minimal 15 kasus uji",
+                "Laporan usability testing bersama 5 responden di luar tim",
+                "Backlog perbaikan yang sudah diurutkan berdasarkan severity"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Usability Testing 101 (Nielsen Norman Group)", "url" => "https://www.nngroup.com/articles/usability-testing-101/"],
+                ["title" => "Pengujian End-to-End dengan Playwright", "url" => "https://playwright.dev/docs/intro"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Piramida Testing\n1. **Unit Test**: Menguji satu fungsi kecil, jumlahnya banyak dan jalannya cepat.\n2. **Integration Test**: Menguji beberapa modul yang saling berbicara, misalnya API dengan database.\n3. **End-to-End Test**: Menguji alur pengguna di browser sungguhan, jumlahnya sedikit tapi paling meyakinkan.\n\n### Usability Testing\n1. Lima responden sudah cukup untuk menangkap sebagian besar masalah utama.\n2. **Berbasis Tugas**: Beri tugas nyata, jangan beri petunjuk cara mengerjakannya.\n3. **Yang Diukur**: Tingkat keberhasilan tugas, waktu penyelesaian, jumlah error, dan titik kebingungan.\n4. **Severity**: Kategorikan temuan menjadi kritis, mayor, atau minor sebelum masuk backlog.\n\n### Definition of Done\nSebuah fitur baru dianggap selesai jika lolos test, lolos code review, dan tidak menurunkan hasil usability."
+        ],
+        [
+            'lms-w7', 7, 'Pertemuan 7: Hosting, Domain, dan Deployment',
+            'Menaikkan aplikasi dari laptop ke internet: membeli domain, mengatur DNS, mengamankan dengan HTTPS, dan merilis lewat pipeline otomatis.',
+            json_encode([
+                "Menjelaskan hubungan domain, DNS, hosting, dan sertifikat SSL dalam satu proses rilis",
+                "Membedakan environment development, staging, dan production beserta pengelolaan rahasianya",
+                "Menjalankan pipeline CI/CD dari commit sampai production, lengkap dengan rencana rollback"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Website tayang di domain publik dengan HTTPS aktif",
+                "Pipeline CI/CD yang berjalan otomatis setiap ada commit baru",
+                "Runbook deployment dan rollback satu halaman"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Apa itu DNS (Cloudflare Learning)", "url" => "https://www.cloudflare.com/learning/dns/what-is-dns/"],
+                ["title" => "Dokumentasi Deployments (Vercel)", "url" => "https://vercel.com/docs/deployments"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Komponen Sebuah Rilis\n1. **Domain**: Nama alamat yang disewa dari registrar, misalnya .com, .id, atau .my.id.\n2. **DNS**: Penerjemah nama domain ke alamat IP, diatur lewat record A, CNAME, dan MX.\n3. **Hosting**: Tempat aplikasi berjalan, bisa shared hosting, VPS, atau platform PaaS.\n4. **SSL/HTTPS**: Sertifikat wajib. Tanpa itu browser menandai situs sebagai tidak aman.\n\n### Alur Deployment\nCommit &rarr; Build &rarr; Test Otomatis (CI) &rarr; Deploy ke Staging &rarr; Verifikasi &rarr; Deploy ke Production (CD).\n\n### Tiga Environment\n1. **Development**: Laptop masing-masing anggota tim.\n2. **Staging**: Semirip mungkin dengan production, dipakai untuk uji akhir sebelum rilis.\n3. **Production**: Dipakai pengguna asli. Semua rahasia disimpan di environment variable, tidak pernah di dalam kode.\n\n> **Aturan Wajib**: Siapkan cara kembali ke versi sebelumnya (*rollback plan*) sebelum menekan tombol rilis."
+        ],
+        [
+            'lms-w8', 8, 'Pertemuan 8: Website Builder No-Code, Low-Code, dan Coding with AI',
+            'Memilih jalur pembuatan website yang paling masuk akal untuk situasi tertentu, dan memakai AI sebagai alat bantu coding tanpa kehilangan kendali mutu.',
+            json_encode([
+                "Membandingkan jalur no-code, low-code, dan coding dari sisi biaya, kecepatan, dan batasannya",
+                "Menentukan jalur yang tepat berdasarkan kompleksitas logika bisnis dan target waktu rilis",
+                "Memakai AI untuk scaffolding, refactor, dan dokumentasi dengan disiplin review yang jelas"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                "Satu landing page versi no-code yang sudah tayang",
+                "Tabel perbandingan tiga jalur: biaya, waktu kerja, batasan, dan risiko vendor lock-in",
+                "Demo akhir dan presentasi produk tim di depan Guru/Instruktur"
+            ], JSON_UNESCAPED_UNICODE),
+            json_encode([
+                ["title" => "Webflow University", "url" => "https://university.webflow.com/"],
+                ["title" => "Panduan Claude Code", "url" => "https://docs.claude.com/en/docs/claude-code/overview"]
+            ], JSON_UNESCAPED_UNICODE),
+            "### Tiga Jalur Membangun Website\n1. **No-Code**: Merakit secara visual, misalnya Webflow, Framer, atau Wix. Paling cepat untuk landing page dan uji pasar.\n2. **Low-Code**: Visual ditambah sedikit logika atau kode, misalnya Bubble atau Retool.\n3. **Coding with AI**: Tetap menulis kode sendiri, dengan AI membantu scaffolding, refactor, penulisan test, dan dokumentasi.\n\n### Cara Memilih Jalur\n1. Butuh cepat memvalidasi pasar dan logikanya sederhana &rarr; pilih no-code.\n2. Ada alur data dan pembagian role pengguna tetapi tim kecil &rarr; pilih low-code.\n3. Logika bisnis unik dan butuh skala serta kepemilikan penuh &rarr; pilih coding dibantu AI.\n\n### Disiplin Memakai AI\n1. **Beri Konteks**: Sertakan PRD, kontrak API, dan standar kode tim di dalam prompt.\n2. **Selalu Review**: AI bisa salah, dan kode tetap menjadi tanggung jawab engineer.\n3. **Uji Sebelum Merge**: Hasil AI wajib lolos test yang sama dengan kode buatan manusia.\n4. **Waspadai Vendor Lock-in**: Sebelum memilih platform no-code, pastikan data masih bisa diekspor."
+        ]
+    ];
+
+    $pdo->exec("DELETE FROM lms_modules");
+    $stmt = $pdo->prepare("
+        INSERT INTO lms_modules (id, week_number, title, summary, objectives, deliverables, external_links, content, is_published)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+    ");
+    foreach ($allModules as $m) {
+        $stmt->execute($m);
     }
 }
 ?>
