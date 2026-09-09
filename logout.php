@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // logout.php - Sesi Keluar dan Pengalihan ke Halaman Login
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
