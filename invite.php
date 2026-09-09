@@ -1,7 +1,8 @@
-﻿<?php
+<?php
 // invite.php - Siswa set password via unique invite token link
-session_name("SCRUMVIBE_SESS");
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 require_once __DIR__ . "/includes/db.php";
 require_once __DIR__ . "/includes/whatsapp.php";
@@ -53,8 +54,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $member) {
 <div class="w-full max-w-md">
 
     <div class="text-center mb-6">
-        <span class="text-2xl font-black text-[#043399] tracking-tight">ScrumVibe</span>
-        <p class="text-xs text-slate-500 mt-1 font-medium">Manajemen Tim Scrum</p>
+        <img src="logo/LOGO VINIX.png" alt="VINIX7" class="h-12 w-auto mx-auto object-contain mb-2">
+        <span class="text-xl font-black text-[#043399] tracking-tight">Program Fast Track</span>
+        <p class="text-xs text-slate-500 mt-0.5 font-medium">PT VINIX SEVEN AURUM &bull; Aktivasi Akun Siswa</p>
     </div>
 
     <?php if (!$token || !$member): ?>
